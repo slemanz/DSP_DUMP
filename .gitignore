@@ -4,6 +4,9 @@
 *.elf
 *.bin
 
-# worksapces
+# vendored lib build output
+lib/build/
+
+# workspaces
 *.vscode*
 *.jdebug.user
