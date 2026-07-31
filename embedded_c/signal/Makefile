@@ -6,7 +6,7 @@ FLOAT=-mfloat-abi=hard
 
 BUILD_DIR = Build
 ROOT_DIR = ../general
-LIB_DIR = ../lib
+LIB_DIR = ../../lib
 
 LINKER= -T $(ROOT_DIR)/linkers/STM32F411.ld
 MAP_FILE= -Wl,-Map=$(BUILD_DIR)/$(TARGET).map

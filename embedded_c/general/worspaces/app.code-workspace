@@ -10,16 +10,16 @@
             "path": "../linkers"
         },
         {
-            "path": "../../lib"
+            "path": "../../../lib"
         },
     ],
     "settings": {
         "C_Cpp.default.includePath": [
             "${workspaceFolder}/../app/Inc",
             "${workspaceFolder}/../drivers/Inc",
-            "${workspaceFolder}/../../lib/CMSIS-DSP/Include",
-            "${workspaceFolder}/../../lib/CMSIS-DSP/PrivateInclude",
-            "${workspaceFolder}/../../lib/CMSIS_6/CMSIS/Core/Include",
+            "${workspaceFolder}/../../../lib/CMSIS-DSP/Include",
+            "${workspaceFolder}/../../../lib/CMSIS-DSP/PrivateInclude",
+            "${workspaceFolder}/../../../lib/CMSIS_6/CMSIS/Core/Include",
         ],
     }
 }
