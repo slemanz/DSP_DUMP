@@ -32,6 +32,12 @@ void OnProjectLoad (void) {
   // User settings
   //
   File.Open ("$(ProjectDir)/../Build/flash.elf");
+
+  // window layout, so every module opens the same way
+  Window.Show ("Data Sampling");
+  Window.Show ("Timeline");
+  Window.Show ("Watched Data");
+  Window.Show ("Console");
 }
 
 /*********************************************************************

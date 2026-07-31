@@ -92,7 +92,10 @@ load:
 monitor:
 	picocom -b $(BAUD) $(PORT)
 
+debug:
+	ozone $(abspath workspaces/app.jdebug)
+
 clean:
 	rm -rf $(BUILD_DIR)
 
-.PHONY: all main board_test load monitor clean
+.PHONY: all load monitor debug clean
