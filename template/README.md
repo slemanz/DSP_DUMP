@@ -67,3 +67,7 @@ The [`workspaces/`](workspaces) folder holds both editor and debugger setups:
 Ozone is also how the signals get inspected: add a global to **View -> Data
 Sampling** and show it under **View -> Timeline** to watch a buffer evolve while
 the code runs.
+
+For a quick look without the debugger, `printf` is retargeted to UART2 at 115200
+baud, so the Arduino IDE's **Tools -> Serial Plotter** will graph whatever the
+application prints.
