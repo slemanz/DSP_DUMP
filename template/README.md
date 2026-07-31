@@ -7,9 +7,10 @@ start a new experiment, or read it to see how the pieces below fit together.
 
 ## Layout
 
-- [`app/`](app) - the application itself: `main.c`, the `config` layer that
-  initializes the drivers and retargets `printf` to UART2, and `signals.c` with
-  the sample waveforms the examples feed their algorithms.
+- [`app/`](app) - the applications: `main.c` and `board_test.c`, the `config`
+  layer that initializes the drivers, describes the board wiring and retargets
+  `printf` to UART2, and `signals.c` with the sample waveforms the examples
+  feed their algorithms.
 - [`drivers/`](drivers/README.md) - the bare-metal STM32F411 drivers the
   application runs on.
 - [`linkers/`](linkers) - the linker script and startup code that place the image
@@ -25,9 +26,17 @@ The CMSIS-DSP archive this links against lives at the repository root, in
 ## Building
 
 ```sh
-make        # compile and link the firmware image
-make load   # flash the image to the board over J-Link
-make clean  # remove build artifacts
+make          # compile and link the firmware image
+make load     # flash the image to the board over J-Link
+make monitor  # open the serial console with picocom
+make clean    # remove build artifacts
+```
+
+`monitor` defaults to `/dev/ttyUSB0` at 115200 baud. Override it when the board
+enumerates elsewhere:
+
+```sh
+make monitor PORT=/dev/ttyACM0
 ```
 
 The build lands in `Build/`, with `flash.elf` for the debugger and `flash.bin`
@@ -44,14 +53,31 @@ make -C ../lib
 ### Selecting which example to build
 
 `main.c` is the default, but the Makefile takes an `APP` variable naming any
-file in [`app/Src/`](app/Src):
+file in [`app/Src/`](app/Src), with one target per example:
 
 ```sh
-make APP=main
+make main         # the CMSIS-DSP starting point
+make board_test   # exercises the board's peripherals
 ```
 
 Modules that carry several examples add one target per concept, so each can be
 built and flashed on its own.
+
+### `board_test`
+
+Worth running first on a fresh setup, and worth coming back to whenever a
+result looks wrong, to tell a bad algorithm apart from bad wiring. It blinks
+the three LEDs on `PB3`/`PB4`/`PB5` together every 500 ms and prints a line on
+the same period with the potentiometer's raw ADC count and whether the button
+was pressed since the last report:
+
+```
+pot:  2047   button: -
+pot:  3120   button: pressed
+```
+
+The button is polled on every pass through the loop rather than once per
+report, so a tap shorter than 500 ms still shows up.
 
 ## Debugging
 

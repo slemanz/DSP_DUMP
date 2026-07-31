@@ -35,6 +35,38 @@ void config_drivers(void)
 }
 
 /************************************************************
+*                         PINS                              *
+*************************************************************/
+
+// push-pull output, no pull resistor
+void led_init(GPIO_RegDef_t *pGPIOx, uint8_t pin)
+{
+    GPIO_PinConfig_t led;
+    led.pGPIOx = pGPIOx;
+    led.GPIO_PinNumber = pin;
+    led.GPIO_PinMode = GPIO_MODE_OUT;
+    led.GPIO_PinSpeed = GPIO_SPEED_FAST;
+    led.GPIO_PinOPType = GPIO_OP_TYPE_PP;
+    led.GPIO_PinPuPdControl = GPIO_NO_PUPD;
+    led.GPIO_PinAltFunMode = GPIO_PIN_NO_ALTFN;
+    GPIO_Init(&led);
+}
+
+// input with internal pull-up; mode is GPIO_MODE_IN or one of the GPIO_MODE_IT_*
+void button_init(GPIO_RegDef_t *pGPIOx, uint8_t pin, uint8_t mode)
+{
+    GPIO_PinConfig_t btn;
+    btn.pGPIOx = pGPIOx;
+    btn.GPIO_PinNumber = pin;
+    btn.GPIO_PinMode = mode;
+    btn.GPIO_PinSpeed = GPIO_SPEED_FAST;
+    btn.GPIO_PinOPType = GPIO_OP_TYPE_PP;
+    btn.GPIO_PinPuPdControl = GPIO_PIN_PU;
+    btn.GPIO_PinAltFunMode = GPIO_PIN_NO_ALTFN;
+    GPIO_Init(&btn);
+}
+
+/************************************************************
 *                         APP                               *
 *************************************************************/
 

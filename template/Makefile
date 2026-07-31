@@ -8,6 +8,9 @@ FLOAT=-mfloat-abi=hard -mfpu=fpv4-sp-d16
 BUILD_DIR = Build
 LIB_DIR = ../lib
 
+PORT ?= /dev/ttyUSB0
+BAUD ?= 115200
+
 LINKER= -T linkers/STM32F411.ld
 MAP_FILE= -Wl,-Map=$(BUILD_DIR)/$(TARGET).map
 
@@ -80,10 +83,16 @@ $(BUILD_DIR)/$(TARGET).elf: $(OBJS) $(DRIVERS)
 main:
 	$(MAKE) all APP=main
 
+board_test:
+	$(MAKE) all APP=board_test
+
 load:
 	jlink flash.jlink
+
+monitor:
+	picocom -b $(BAUD) $(PORT)
 
 clean:
 	rm -rf $(BUILD_DIR)
 
-.PHONY: all main load clean
+.PHONY: all main board_test load monitor clean
