@@ -2,9 +2,11 @@
 CC := arm-none-eabi-gcc
 ARMAR := arm-none-eabi-ar
 
-# Optimized flags for STM32G4 (Cortex-M4)
-# Added -ffunction-sections and -fdata-sections to allow the linker 
-# to remove unused DSP tables and functions
+# Optimized flags for the STM32F411 (Cortex-M4F).
+# These must match the flags used by the applications that link against this
+# archive, or the float ABI will not agree at link time.
+# -ffunction-sections and -fdata-sections let the linker drop the DSP tables
+# and functions the application never calls.
 CFLAGS := -mcpu=cortex-m4 \
  -mfpu=fpv4-sp-d16 \
  -mfloat-abi=hard \
@@ -25,7 +27,6 @@ CMSIS_6 := CMSIS_6
 CMSIS_DSP := CMSIS-DSP
 CMSIS_CORE_INCLUDES := $(CMSIS_6)/CMSIS/Core/Include 
 
-# Sources (kept your list)
 SRCS := $(CMSIS_DSP)/Source/BasicMathFunctions/BasicMathFunctions.c \
  $(CMSIS_DSP)/Source/CommonTables/CommonTables.c \
  $(CMSIS_DSP)/Source/InterpolationFunctions/InterpolationFunctions.c \
@@ -50,19 +51,20 @@ CFLAGS += $(INC_FLAGS)
 
 # Output folder
 BUILDDIR = build
-# Fixed the object naming pattern to match the rule below
 OBJECTS := $(SRCS:%=$(BUILDDIR)/%.o)
 
 all: $(BUILDDIR)/libCMSISDSP.a
 
-# Added 's' to rcs to create an index, making linking faster and more reliable
+# 's' builds the archive index, which makes linking faster and more reliable
 $(BUILDDIR)/libCMSISDSP.a: $(OBJECTS)
 	$(ARMAR) -rcs $@ $(OBJECTS)
 
-# Fixed rule to correctly handle subdirectories in CMSIS-DSP
+# mkdir -p mirrors the CMSIS-DSP source tree under $(BUILDDIR)
 $(BUILDDIR)/%.c.o: %.c
 	@mkdir -p $(dir $@)
 	$(CC) -c $(CFLAGS) $< -o $@
 
 clean:
-	rm -rf $(BUILDDIR)/$(CMSIS_DSP)
+	rm -rf $(BUILDDIR)
+
+.PHONY: all clean
