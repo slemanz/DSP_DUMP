@@ -10,3 +10,9 @@ lib/build/
 # workspaces
 *.vscode*
 *.jdebug.user
+
+# others
+temp.md
+temp1.md
+temp2.md
+temp3.md
