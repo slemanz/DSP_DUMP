@@ -1,6 +1,6 @@
 CC=arm-none-eabi-gcc
 TARGET=flash
-APP ?= main
+APP ?= stat_mean
 
 MACH=-mcpu=cortex-m4
 FLOAT=-mfloat-abi=hard -mfpu=fpv4-sp-d16
@@ -80,8 +80,23 @@ $(BUILD_DIR)/$(TARGET).elf: $(OBJS) $(DRIVERS)
 	$(OBJCOPY) -O binary $(BUILD_DIR)/$(TARGET).elf $(BUILD_DIR)/$(TARGET).bin
 	arm-none-eabi-size $(BUILD_DIR)/$(TARGET).elf
 
-main:
-	$(MAKE) all APP=main
+stat_mean:
+	$(MAKE) all APP=stat_mean
+
+stat_variance:
+	$(MAKE) all APP=stat_variance
+
+stat_std:
+	$(MAKE) all APP=stat_std
+
+stat_cmsis:
+	$(MAKE) all APP=stat_cmsis
+
+stat_noise:
+	$(MAKE) all APP=stat_noise
+
+stat_running:
+	$(MAKE) all APP=stat_running
 
 board_test:
 	$(MAKE) all APP=board_test
