@@ -78,3 +78,134 @@ the standard deviation settles at $A/\sqrt{2}$, the same 0.707 factor that
 turns a peak amplitude into an RMS value: for a zero mean signal, the standard
 deviation *is* the RMS value. `stat_std.c` measures the 5 Hz unit sine and
 gets 0.707109 against the 0.707107 the identity predicts.
+
+### Dividing by N-1
+
+The divisor is $N-1$, not $N$. The samples are a finite sample of a signal
+rather than the whole of it, and the mean subtracted from them was itself
+estimated from those same samples, which pulls the sum of squares slightly low.
+Dividing by $N-1$ corrects for it. The difference is negligible for a few
+hundred samples and matters for a handful, but the choice has to be made
+consistently, and CMSIS-DSP makes the same one: `arm_var_f32` divides by
+`blockSize - 1`.
+
+## Computing Them on a Cortex-M4
+
+The Cortex-M4F has a single precision FPU, and the whole point of this module
+is that the arithmetic runs in hardware. Three details decide whether it
+actually does.
+
+Use `sqrtf`, not `sqrt`. The FPU has a single precision square root
+instruction, `VSQRT.F32`, that finishes in a few dozen cycles. `sqrt` takes and
+returns a `double`, which the M4 has no hardware for, so the compiler converts
+up, calls a software routine in the libc, and converts back down.
+
+Square by multiplying, not with `powf`. `powf(x, 2)` is a library call that
+goes through a logarithm and an exponential; `x * x` is one FPU instruction
+with the same result.
+
+And keep the constants single precision. A bare `2.0` is a `double` literal and
+drags the expression around it up to double with it. Write `2.0f`.
+
+### Two Passes or One
+
+Both formulas need the mean before they can measure the spread, which means two
+passes over the samples and a buffer to hold them. Expanding the square gives a
+form that needs only a running sum and a running sum of squares:
+
+$$ \sigma^2 = \dfrac{1}{N-1}\left(\sum^{N-1}_{i=0} x_i^2 - \dfrac{\left(\sum^{N-1}_{i=0} x_i\right)^2}{N}\right) $$
+
+That version can measure a live stream one sample at a time with no buffer at
+all, and it is the form CMSIS-DSP documents in the header of `arm_std_f32`.
+
+The price is precision. Both terms grow with the DC level while their
+difference stays the size of the fluctuation, so the answer ends up built out
+of the last few bits of two much larger numbers. `stat_running.c` puts the two
+side by side on the same signal: they agree at a DC offset of 2.0, and at an
+offset of 1000.0 the one pass version reports 0.90 against the 0.62 the two
+pass version gets, an error of nearly 50%. A `float` carries about seven
+significant digits, and at the magnitude those sums reach, the smallest
+representable step is already larger than the answer being looked for. The
+defense, when the one pass form is the one that fits, is to remove the DC
+before measuring the fluctuation.
+
+## Using CMSIS-DSP
+
+The library covers all three, and the statistics functions share one shape:
+a pointer to the input, the number of samples, and a pointer to where the
+result goes. They return nothing.
+
+```c
+float32_t mean, variance, std;
+
+arm_mean_f32(signal, SIG_LEN, &mean);
+arm_var_f32(signal, SIG_LEN, &variance);
+arm_std_f32(signal, SIG_LEN, &std);
+```
+
+`arm_std_f32` is not a separate implementation: it calls `arm_var_f32` and
+takes the square root of the result. `stat_cmsis.c` runs the hand written
+versions and the library versions on the same signal and prints the difference
+between them, which lands at zero or in the last digit the float can carry.
+A last digit that disagrees is not a bug. The library does not add the samples
+in the same order, and in floating point a different order of additions gives a
+different final bit.
+
+The same header carries `arm_max_f32` and `arm_min_f32`, which return the value
+and its index, and `arm_max_no_idx_f32` for when the index is not wanted.
+
+## Noise
+
+Everything above is a description of a signal, but point it at a sensor sitting
+perfectly still and it becomes a measurement of noise. The mean is the DC level
+being read and the standard deviation is the noise riding on it, which is
+exactly how a converter's noise is specified. `stat_noise.c` samples the
+potentiometer on `PA1` and reports both, along with the peak to peak spread and
+the fraction of samples falling within one standard deviation of the mean:
+
+```
+mean 2047.34  std  1.87  p-p   11  snr  1095.4  within 1 sigma 176/256
+```
+
+Peak to peak is the more intuitive number and the less useful one: it is set by
+the two most extreme samples in the buffer, so a single glitch moves it, while
+the standard deviation is an average over all of them. That is why datasheets
+quote noise as an RMS or standard deviation figure.
+
+The signal to noise ratio in that line is the mean divided by the standard
+deviation, the definition that applies when the quantity of interest is a DC
+level and everything else is noise. For an AC signal the ratio is defined
+between powers instead, and is a different calculation.
+
+The last column is the 68 percent rule. Noise that is normally distributed puts
+roughly 68% of its samples within one standard deviation of the mean, 95%
+within two, and 99.7% within three. Hold the potentiometer still and the count
+should land near 68%. Turn it and the count collapses, because what is being
+measured is no longer noise. That rule is also the basis of spike rejection: a
+sample three or four deviations from the mean is unlikely enough to be treated
+as a glitch rather than as data.
+
+## Apps
+
+Each app is a self-contained `main` that demonstrates one concept. The first
+four print once and stop, so `make monitor` before resetting the board is
+enough to catch the output. The fifth prints continuously.
+
+1. [Developing the signal mean algorithm](app/Src/stat_mean.c): the mean by
+   hand over 320 samples, printed alongside the mean of the same signal lifted
+   by a known DC offset, to show the mean is the DC value.
+2. [Developing the signal variance](app/Src/stat_variance.c): the variance by
+   hand from the mean, and the same signal with a DC offset added, whose
+   variance is unchanged.
+3. [Developing the signal standard deviation algorithm](app/Src/stat_std.c):
+   the square root of the variance with `sqrtf`, checked against $A/\sqrt{2}$
+   on a unit amplitude sine.
+4. [Computing the statistics using CMSIS-DSP](app/Src/stat_cmsis.c): the hand
+   written results and `arm_mean_f32`, `arm_var_f32` and `arm_std_f32` in
+   parallel columns, with the difference between them.
+5. [Measuring real noise with the ADC](app/Src/stat_noise.c): 256 readings of
+   the potentiometer on `PA1` reduced to mean, standard deviation, peak to
+   peak, signal to noise ratio and the count within one standard deviation.
+6. [One pass mean and variance](app/Src/stat_running.c): the buffer free form
+   of the variance next to the two pass form, and the precision it loses when
+   the signal carries a large DC offset.
