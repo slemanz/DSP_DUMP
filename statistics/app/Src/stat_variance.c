@@ -14,9 +14,6 @@
 #define SIG_LEN     KHZ1_15_SIG_LEN
 #define DC_OFFSET   2.0f
 
-extern float32_t _5hz_signal[HZ_5_SIG_LEN];
-extern float32_t input_signal_f32_1kHz_15kHz[KHZ1_15_SIG_LEN];
-
 static float32_t signal_mean(const float32_t *sig_src_arr, uint32_t sig_length);
 static float32_t signal_variance(const float32_t *sig_src_arr, float32_t sig_mean, uint32_t sig_length);
 
