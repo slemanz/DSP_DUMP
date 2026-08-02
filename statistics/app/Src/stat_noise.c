@@ -21,7 +21,6 @@
 #define SAMPLES         256U
 #define REPORT_MS       500U
 
-
 static uint32_t samples_within(const float32_t *sig_src_arr, uint32_t sig_length,
                                float32_t sig_mean, float32_t sig_std);
 
@@ -36,7 +35,7 @@ int main(void)
 
     printf("\r\nstatistics of %u adc samples, pot on PA1\r\n", (unsigned)SAMPLES);
 
-    while(1)
+    while (1)
     {
         for (uint32_t i = 0; i < SAMPLES; i++)
         {
@@ -62,4 +61,20 @@ int main(void)
 
         ticks_delay(REPORT_MS);
     }
+}
+
+static uint32_t samples_within(const float32_t *sig_src_arr, uint32_t sig_length,
+                               float32_t sig_mean, float32_t sig_std)
+{
+    uint32_t count = 0;
+
+    for (uint32_t i = 0; i < sig_length; i++)
+    {
+        if (fabsf(sig_src_arr[i] - sig_mean) <= sig_std)
+        {
+            count++;
+        }
+    }
+
+    return count;
 }
