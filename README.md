@@ -21,8 +21,9 @@ In reading order:
 - [Signal Statistics and Noise](statistics): the mean, the variance and the
   standard deviation of a signal, what each one measures, and how noise is
   quantified with them.
-- [Quantization and Sampling](embedded_c/sampling): turning a continuous signal
-  into samples, and what the ADC's finite resolution costs.
+- [Quantization and the Sampling Theorem](sampling): turning a continuous
+  signal into samples, what the ADC's finite resolution costs, and how fast the
+  sampling has to be to keep the signal intact.
 - [Linear Systems and Superposition](embedded_c/superposition): the properties
   that make a system linear, and the decomposition they allow.
 - [Discrete Fourier Transform](embedded_c/dft): moving a signal between the
