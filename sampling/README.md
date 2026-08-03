@@ -101,4 +101,55 @@ amplitude. So at exactly $2 f_{max}$ the result depends on the phase, which
 means the reconstruction is not guaranteed and the sampling is not proper. The
 condition that is actually safe is the strict one, $f_s > 2 f_{max}$, and real
 systems leave considerably more margin than that so the anti aliasing filter has
+
+## Aliasing
+
+When the theorem is violated the signal is not merely degraded, it is
+impersonated. **Aliasing** is characterized by different signals becoming
+indistinguishable: a component above half the sampling rate folds back below it
+and arrives disguised as a frequency that was never there. The frequency it
+folds to is:
+
+$$ f_{alias} = |f - k f_s| $$
+
+for whichever integer $k$ brings the result below $f_s/2$. Sampled at 20 Hz, an
+11 Hz input reads back as 9 Hz, a 15 Hz input reads back as 5 Hz, and a 25 Hz
+input reads back as 5 Hz as well.
+
+`sampling_alias.c` prints that folding table and then makes the point that
+matters: it samples a 15 Hz cosine and a 5 Hz cosine at the same instants and
+compares the two sets of numbers. The largest difference across forty samples is
+on the order of $10^{-5}$, which is the rounding error of `cosf` and nothing
+else. The two are not similar, they are the same data. No filter, no transform
+and no amount of processing applied after the converter can separate them,
+because there is nothing left to separate.
+
+## The Signal Chain
+
+Which is why a system that respects the theorem puts the work before the
+converter. The full chain runs:
+
+```
+analog in -> anti aliasing filter -> ADC -> DSP -> DAC -> reconstruction filter -> analog out
+```
+
+The **anti aliasing filter** is an analog filter, built from real components,
+sitting between the signal and the ADC pin. Its job is to remove everything
+above half the sampling rate while the removal is still possible. The sampling
+rate itself is set in firmware, so the two have to be designed together.
+
+After the converter the samples are in memory and the processing happens. If an
+analog output is wanted, a **DAC** turns the processed samples back into a
+voltage and a second analog filter smooths it, removing the components above
+half the sampling rate that the conversion reintroduces. That one is called the
+**reconstruction filter**. It does the same job as the first, at the other end.
+
+In practice most embedded work stops at the DSP stage. The filter, the converter
+and the processing are the parts that always appear.
+
+`sampling_antialias.c` demonstrates the first filter's effect, with one honest
+caveat stated up front: it runs the filter in software over an oversampled
+model, ahead of the point where the samples are taken. That is the position a
+real RC network occupies in the circuit. Filtering in software after sampling
+would accomplish nothing at all.
 somewhere to roll off.
