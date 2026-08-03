@@ -1,6 +1,6 @@
 CC=arm-none-eabi-gcc
 TARGET=flash
-APP ?= main
+APP ?= sampling_theorem
 
 MACH=-mcpu=cortex-m4
 FLOAT=-mfloat-abi=hard -mfpu=fpv4-sp-d16
@@ -48,6 +48,7 @@ OBJS		+= $(BUILD_DIR)/syscalls.o
 OBJS		+= $(BUILD_DIR)/startup.o
 
 OBJS		+= $(BUILD_DIR)/signals.o
+OBJS		+= $(BUILD_DIR)/probe.o
 
 DRIVERS		+= $(BUILD_DIR)/driver_clock.o
 DRIVERS		+= $(BUILD_DIR)/driver_systick.o
@@ -80,8 +81,20 @@ $(BUILD_DIR)/$(TARGET).elf: $(OBJS) $(DRIVERS)
 	$(OBJCOPY) -O binary $(BUILD_DIR)/$(TARGET).elf $(BUILD_DIR)/$(TARGET).bin
 	arm-none-eabi-size $(BUILD_DIR)/$(TARGET).elf
 
-main:
-	$(MAKE) all APP=main
+sampling_quantize:
+	$(MAKE) all APP=sampling_quantize
+
+sampling_theorem:
+	$(MAKE) all APP=sampling_theorem
+
+sampling_alias:
+	$(MAKE) all APP=sampling_alias
+
+sampling_adc:
+	$(MAKE) all APP=sampling_adc
+
+sampling_antialias:
+	$(MAKE) all APP=sampling_antialias
 
 board_test:
 	$(MAKE) all APP=board_test
