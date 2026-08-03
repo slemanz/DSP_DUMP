@@ -203,6 +203,9 @@ void Default_Handler(void)
 
 void Reset_Handler(void)
 {
+    // enable CP10 and CP11
+    *((volatile uint32_t*)0xE000ED88) |= (0xFU << 20);
+
     // copy .data section to SRAM
     uint32_t size = (uint32_t)&_edata - (uint32_t)&_sdata;
 
