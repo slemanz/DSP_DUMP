@@ -83,6 +83,5 @@ data quantities
 
 --
 
-1. [Quantization and Sampling](sampling)
-2. [Linear Systems and Superposition](superposition)
-3. [Discrete Fourier Transform](dft)
+1. [Linear Systems and Superposition](superposition)
+2. [Discrete Fourier Transform](dft)
