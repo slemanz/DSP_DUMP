@@ -153,3 +153,87 @@ model, ahead of the point where the samples are taken. That is the position a
 real RC network occupies in the circuit. Filtering in software after sampling
 would accomplish nothing at all.
 somewhere to roll off.
+
+## Analog Filters
+
+Analog filters divide into passive and active. Passive filters are built from
+passive components alone, resistors, capacitors and inductors. Active filters
+add an active component, usually an operational amplifier, which buys the
+ability to apply gain. That matters because filtering attenuates, and a signal
+that comes out of a filter too small to use has to be amplified before the next
+stage.
+
+### The Passive Low Pass
+
+The simplest useful filter is a resistor in series with the signal and a
+capacitor from the output to ground, which is why these are called RC filters.
+It passes low frequencies and blocks high ones.
+
+The mechanism is in the capacitor's behavior against frequency. At high
+frequency the capacitor behaves as a short circuit, which ties the output to
+ground and leaves the converter with nothing. At low frequency the capacitor
+behaves as an open circuit, which is as if it were not there, leaving a plain
+wire from the source to the output. High frequencies are shunted away, low
+frequencies pass.
+
+The range of frequencies that pass with no significant attenuation is the **pass
+band**, the range that is attenuated is the **stop band**, and the frequency
+where one gives way to the other is the **cutoff frequency**:
+
+$$ f_c = \dfrac{1}{2 \pi R C} $$
+
+Cutoff is defined as the point where the amplitude has dropped by 3 dB, which is
+a fall to $1/\sqrt{2}$ of the input, about 71%. In power rather than amplitude
+that is a fall to one half, which is where the definition comes from.
+
+`sampling_antialias.c` prints the filter's response across six frequencies with
+the ideal and the measured value side by side, and the measured column lands
+within a fraction of a dB of the ideal at cutoff. Two octaves above cutoff it
+has fallen to a third of the input, which is the attenuation that keeps the
+15 Hz component from folding onto the 5 Hz data.
+
+### The Passive High Pass
+
+Swap the resistor and the capacitor and the filter inverts: low frequencies are
+blocked, high frequencies pass. The mechanism inverts with it, and the cutoff
+frequency is given by the same expression.
+
+### Ideal Against Practical
+
+An ideal filter would pass everything below cutoff untouched and everything
+above it not at all, dropping to zero the instant cutoff is crossed. Drawn on a
+plot it is a rectangle, which is why it is called a **brick wall** filter.
+
+Real filters do not do this. Between the pass band and the stop band there is a
+**transition band**, a range over which the amplitude falls gradually rather
+than instantly. How wide it is depends on the complexity of the filter, and the
+rate of fall through it is the **roll-off**. All of practical filter design is
+about how much circuitry to spend narrowing that transition.
+
+### Chebyshev, Butterworth and Bessel
+
+The RC networks above are the teaching case. Real designs use one of three
+configurations, each named after whoever worked it out and each optimizing a
+different parameter. All three are built by cascading a standard active stage,
+the **Sallen-Key** filter, whose component ratios decide which of the three the
+result becomes.
+
+Complexity is counted in **poles**, and more poles means more components, a
+narrower transition band and a faster roll-off. There is no configuration that
+is best at everything, and the reason is the trade between two performance
+measures. The **frequency response** says how sharply the filter separates the
+bands. The **step response** says how the filter behaves when its input jumps
+from one value to another, which is what matters when the signal carries edges
+rather than tones.
+
+| Configuration | Frequency response | Step response |
+| --- | --- | --- |
+| Chebyshev | sharpest roll-off, at the cost of ripple in the pass band | worst, heavy overshoot and slowly decaying ringing |
+| Butterworth | flattest possible pass band, no ripple, roll-off slower than Chebyshev | overshoot and ringing, less than Chebyshev |
+| Bessel | worst roll-off, transition is gradual | best, no overshoot and no ringing at all |
+
+The pattern is that a sharp cut in frequency is paid for in time. Chebyshev buys
+its roll-off with ripple and ringing; Bessel gives up the roll-off entirely and
+gets a clean step in return; Butterworth sits between them. Which one belongs in
+front of a converter depends on whether the signal is being measured for its
+spectrum or for its shape.
