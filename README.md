@@ -24,8 +24,8 @@ In reading order:
 - [Quantization and the Sampling Theorem](sampling): turning a continuous
   signal into samples, what the ADC's finite resolution costs, and how fast the
   sampling has to be to keep the signal intact.
-- [Linear Systems and Superposition](embedded_c/superposition): the properties
-  that make a system linear, and the decomposition they allow.
+- [Linear Systems and Superposition](superposition): the properties that make a
+  system linear, and the decomposition they allow.
 - [Discrete Fourier Transform](embedded_c/dft): moving a signal between the
   time domain and the frequency domain.
 - [Template](template): the bare-metal STM32F411 project skeleton the examples
