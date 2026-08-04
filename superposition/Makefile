@@ -1,6 +1,6 @@
 CC=arm-none-eabi-gcc
 TARGET=flash
-APP ?= main
+APP ?= linear_homogeneity
 
 MACH=-mcpu=cortex-m4
 FLOAT=-mfloat-abi=hard -mfpu=fpv4-sp-d16
@@ -48,6 +48,8 @@ OBJS		+= $(BUILD_DIR)/syscalls.o
 OBJS		+= $(BUILD_DIR)/startup.o
 
 OBJS		+= $(BUILD_DIR)/signals.o
+OBJS		+= $(BUILD_DIR)/probe.o
+OBJS		+= $(BUILD_DIR)/systems.o
 
 DRIVERS		+= $(BUILD_DIR)/driver_clock.o
 DRIVERS		+= $(BUILD_DIR)/driver_systick.o
@@ -80,11 +82,20 @@ $(BUILD_DIR)/$(TARGET).elf: $(OBJS) $(DRIVERS)
 	$(OBJCOPY) -O binary $(BUILD_DIR)/$(TARGET).elf $(BUILD_DIR)/$(TARGET).bin
 	arm-none-eabi-size $(BUILD_DIR)/$(TARGET).elf
 
-main:
-	$(MAKE) all APP=main
+linear_homogeneity:
+	$(MAKE) all APP=linear_homogeneity
 
-board_test:
-	$(MAKE) all APP=board_test
+linear_additivity:
+	$(MAKE) all APP=linear_additivity
+
+linear_shift:
+	$(MAKE) all APP=linear_shift
+
+linear_impulse:
+	$(MAKE) all APP=linear_impulse
+
+linear_step:
+	$(MAKE) all APP=linear_step
 
 load:
 	jlink flash.jlink
