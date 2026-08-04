@@ -237,3 +237,66 @@ its roll-off with ripple and ringing; Bessel gives up the roll-off entirely and
 gets a clean step in return; Butterworth sits between them. Which one belongs in
 front of a converter depends on whether the signal is being measured for its
 spectrum or for its shape.
+
+## Watching the Signals in Ozone
+
+Sampling is a subject about shapes, and a serial console prints numbers. Every
+app in this module therefore streams three globals, declared in
+[`probe.h`](app/Inc/probe.h), which Ozone graphs as waveforms:
+
+| Variable | What it holds |
+| --- | --- |
+| `g_analog` | what goes into the converter |
+| `g_sampled` | what comes out of the sample and hold |
+| `g_error` | what the conversion lost |
+
+Ozone's Data Sampling window reads target memory over SWD while the program
+runs, using the J-Link high speed sampling interface, and the Timeline window
+plots what it collects. Sampling starts on its own when the program resumes and
+stops when it halts, so the whole procedure is to build, run `make debug` and
+press F5.
+
+The window is set up by the project script, in `OnProjectLoad`:
+
+```c
+  Window.Show ("Data Sampling");
+  Edit.SysVar (VAR_HSS_SPEED, 1000);
+  Window.Add ("Data Sampling", "g_analog");
+  Window.Add ("Data Sampling", "g_sampled");
+  Window.Add ("Data Sampling", "g_error");
+  Window.Show ("Timeline");
+```
+
+`VAR_HSS_SPEED` is Ozone's own sampling frequency in Hz, and 1 kHz is twice the
+rate at which the apps update the probes, so no point of the waveform is missed.
+`Window.Add` takes the window name and an expression, which has to evaluate to a
+number of eight bytes or less and whose operands have to be static variables.
+That constraint is the reason the probes are file scope globals rather than
+locals of `main`.
+
+The three modeled examples generate their continuous signal by oversampling: the
+waveform is computed at 500 points per second and the sampling under study
+happens at 50 Hz or below, so the 500 Hz model stands in for the continuous
+signal. `sampling_adc.c` is the one that does not model anything, since there
+the conversion is real.
+
+## Apps
+
+Each app is a self-contained `main` that demonstrates one concept, and each one
+is worth watching in the Timeline rather than only on the serial port.
+
+1. [Quantization](app/Src/sampling_quantize.c): a sine quantized at six bit
+   depths, with the error's standard deviation measured against $q/\sqrt{12}$,
+   then streamed at 4 bits so the staircase and its sawtooth error can be seen.
+2. [The sampling theorem](app/Src/sampling_theorem.c): one 5 Hz sine sampled at
+   four rates in rotation, from ten times the signal down to one times it,
+   including the case of exactly twice where the signal vanishes.
+3. [Aliasing](app/Src/sampling_alias.c): the folding table for a 20 Hz sampling
+   rate, and a demonstration that a 15 Hz cosine and a 5 Hz cosine sampled at
+   that rate produce identical numbers.
+4. [Quantization on the real ADC](app/Src/sampling_adc.c): the potentiometer on
+   `PA1` read through the 12 bit converter and requantized to 6, so the ramp and
+   the staircase can be turned by hand.
+5. [The anti aliasing filter](app/Src/sampling_antialias.c): a one pole low pass
+   ahead of the sampler, its response printed against the ideal RC response, and
+   the aliasing it prevents.
