@@ -82,6 +82,9 @@ $(BUILD_DIR)/$(TARGET).elf: $(OBJS) $(DRIVERS)
 	$(OBJCOPY) -O binary $(BUILD_DIR)/$(TARGET).elf $(BUILD_DIR)/$(TARGET).bin
 	arm-none-eabi-size $(BUILD_DIR)/$(TARGET).elf
 
+systems_tour:
+	$(MAKE) all APP=systems_tour
+
 linear_homogeneity:
 	$(MAKE) all APP=linear_homogeneity
 
@@ -109,4 +112,4 @@ debug:
 clean:
 	rm -rf $(BUILD_DIR)
 
-.PHONY: all load monitor debug clean
+.PHONY: all systems_tour load monitor debug clean
