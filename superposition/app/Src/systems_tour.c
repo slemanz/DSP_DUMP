@@ -20,11 +20,7 @@
 #define SIG_LEN         100U
 #define SIG_HZ          5.0f
 #define STEP_AT         4U      // where the step rises and where the impulse sits
-
-#define TABLE_ROWS      12U     // samples in the numeric table
-#define PLOT_ROWS       SIG_LEN // samples in the ascii plot
-#define PLOT_COLS       41U     // odd, so zero gets a column of its own
-#define PLOT_FULL       1.2f    // amplitude that reaches the edge of the plot
+#define TABLE_ROWS      10U     // samples in the numeric table
 
 /************************************************************
 *                       THE THREE KNOBS                     *
@@ -42,9 +38,6 @@ static void input_sine(float32_t *pDst, uint32_t len);
 static void input_step(float32_t *pDst, uint32_t len);
 static void input_impulse(float32_t *pDst, uint32_t len);
 static void input_ramp(float32_t *pDst, uint32_t len);
-
-static uint32_t plot_column(float32_t v);
-static void plot_row(float32_t in, float32_t out);
 
 static const struct
 {
@@ -82,6 +75,44 @@ int main(void)
 
     inputs[INPUT_SEL].make(x, SIG_LEN);
 
+    for(uint32_t s = 0; s < ARRAY_LEN(systems); s++)
+    {
+        systems[s].run(x, y[s], SIG_LEN);
+    }
+
+    arm_sub_f32(y[SYSTEM_SEL], x, diff, SIG_LEN);
+
+    printf("\r\ninput: %s at %.2f, first %lu of %lu samples\r\n", inputs[INPUT_SEL].name, SIG_AMP, (unsigned long)TABLE_ROWS, (unsigned long)SIG_LEN);
+    printf("\r\n%4s %9s", "n", "x");
+
+    for (uint32_t s = 0; s < ARRAY_LEN(systems); s++)
+    {
+        printf(" %9s", systems[s].name);
+    }
+    printf("\r\n");
+
+    for (uint32_t n = 0; n < TABLE_ROWS; n++)
+    {
+        printf("%4lu %+9.4f", (unsigned long)n, x[n]);
+
+        for (uint32_t s = 0; s < ARRAY_LEN(systems); s++)
+        {
+            printf(" %+9.4f", y[s][n]);
+        }
+
+        printf("\r\n");
+    }
+
+    arm_absmax_f32(x, SIG_LEN, &peak_in, &index);
+    arm_absmax_f32(y[SYSTEM_SEL], SIG_LEN, &peak_out, &index);
+
+    printf("\r\nover the whole buffer, peak in %.3f and peak out %.3f, so %s\r\n", peak_in, peak_out, systems[SYSTEM_SEL].name);
+    printf("came out %.2f times as tall\r\n", peak_out / peak_in);
+    printf("\r\nstreaming %s through %s to the graph\r\n", inputs[INPUT_SEL].name, systems[SYSTEM_SEL].name);
+
+    /* one route through one system, so the fourth trace has nothing to carry */
+    g_path_b = 0.0f;
+
     uint32_t n = 0;
 
     while (1)
@@ -89,6 +120,8 @@ int main(void)
         uint32_t i = n % SIG_LEN;
 
         g_input = x[i];
+        g_path_a = y[SYSTEM_SEL][i];
+        g_error  = diff[i];
 
         n++;
         probe_step();
@@ -125,39 +158,4 @@ static void input_ramp(float32_t *pDst, uint32_t len)
     {
         pDst[n] = SIG_AMP * (float32_t)n / (float32_t)(len - 1U);
     }
-}
-
-// maps a sample onto a column, with anything past PLOT_FULL pinned to the edge
-static uint32_t plot_column(float32_t v)
-{
-    float32_t half = (float32_t)(PLOT_COLS / 2U);
-    int32_t col = (int32_t)roundf(half + half * (v / PLOT_FULL));
-
-    if (col < 0)
-    {
-        col = 0;
-    }
-    else if (col >= (int32_t)PLOT_COLS)
-    {
-        col = (int32_t)PLOT_COLS - 1;
-    }
-
-    return (uint32_t)col;
-}
-
-static void plot_row(float32_t in, float32_t out)
-{
-    char row[PLOT_COLS + 1U];
-
-    for (uint32_t c = 0; c < PLOT_COLS; c++)
-    {
-        row[c] = ' ';
-    }
-
-    row[PLOT_COLS / 2U] = '|';
-    row[plot_column(in)] = '.';
-    row[plot_column(out)] = '#';
-    row[PLOT_COLS] = '\0';
-
-    printf("%+7.3f %+7.3f  %s\r\n", in, out, row);
 }
