@@ -126,3 +126,38 @@ static void input_ramp(float32_t *pDst, uint32_t len)
         pDst[n] = SIG_AMP * (float32_t)n / (float32_t)(len - 1U);
     }
 }
+
+// maps a sample onto a column, with anything past PLOT_FULL pinned to the edge
+static uint32_t plot_column(float32_t v)
+{
+    float32_t half = (float32_t)(PLOT_COLS / 2U);
+    int32_t col = (int32_t)roundf(half + half * (v / PLOT_FULL));
+
+    if (col < 0)
+    {
+        col = 0;
+    }
+    else if (col >= (int32_t)PLOT_COLS)
+    {
+        col = (int32_t)PLOT_COLS - 1;
+    }
+
+    return (uint32_t)col;
+}
+
+static void plot_row(float32_t in, float32_t out)
+{
+    char row[PLOT_COLS + 1U];
+
+    for (uint32_t c = 0; c < PLOT_COLS; c++)
+    {
+        row[c] = ' ';
+    }
+
+    row[PLOT_COLS / 2U] = '|';
+    row[plot_column(in)] = '.';
+    row[plot_column(out)] = '#';
+    row[PLOT_COLS] = '\0';
+
+    printf("%+7.3f %+7.3f  %s\r\n", in, out, row);
+}
