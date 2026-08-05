@@ -84,7 +84,21 @@ int main(void)
 
     while(1)
     {
-        g_input = x[n % SIG_LEN];
+        uint32_t sel = (n/(SIG_LEN*HOLD_PASSES)) % 4U; // systems to show
+
+        if (sel != shown)
+        {
+            (void)homogeneity_error(systems[sel].run, STREAM_GAIN);
+            printf("system: %s\r\n", systems[sel].name);
+            shown = sel;
+        }
+
+        uint32_t i = n % SIG_LEN;
+
+        g_input  = STREAM_GAIN * x[i];
+        g_path_a = path_a[i];
+        g_path_b = path_b[i];
+        g_error  = diff[i];
 
         n++;
         probe_step();
@@ -105,7 +119,7 @@ static float32_t homogeneity_error(system_fn run, float32_t k)
     run(scaled, path_a, SIG_LEN);
 
     run(x, path_b, SIG_LEN);
-    arm_scale_f32(x, k, path_b, SIG_LEN);
+    arm_scale_f32(path_b, k, path_b, SIG_LEN);
 
     arm_sub_f32(path_a, path_b, diff, SIG_LEN);
     arm_absmax_f32(diff, SIG_LEN, &max, &index);
