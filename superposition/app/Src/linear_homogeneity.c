@@ -40,7 +40,7 @@ static const struct
 
 static const float32_t gains[] = { 0.25f, 0.5f, 1.0f, 2.0f, 4.0f };
 
-static float32_t homegeneity_error(system_fn run, float32_t k);
+static float32_t homogeneity_error(system_fn run, float32_t k);
 
 int main(void)
 {
@@ -66,7 +66,7 @@ int main(void)
 
         for (uint32_t g = 0; g < ARRAY_LEN(gains); g++)
         {
-            //printf(" %11.3e", homogeneity_error(systems[s].run, gains[g]));
+            printf(" %11.3e", homogeneity_error(systems[s].run, gains[g]));
         }
         printf("\r\n");
     }
@@ -96,8 +96,19 @@ int main(void)
  * scaled first and then put through the system, path_b is the input put
  * through the system first and scaled afterwards.
  */
-static float32_t homegeneity_error(system_fn run, float32_t k)
+static float32_t homogeneity_error(system_fn run, float32_t k)
 {
+    float32_t max;
+    uint32_t index;
 
-    return 0.0f;
+    arm_scale_f32(x, k, scaled, SIG_LEN);
+    run(scaled, path_a, SIG_LEN);
+
+    run(x, path_b, SIG_LEN);
+    arm_scale_f32(x, k, path_b, SIG_LEN);
+
+    arm_sub_f32(path_a, path_b, diff, SIG_LEN);
+    arm_absmax_f32(diff, SIG_LEN, &max, &index);
+
+    return max;
 }
