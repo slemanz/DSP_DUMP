@@ -74,9 +74,55 @@ static float32_t diff[SIG_LEN];
 
 int main(void)
 {
+    float32_t peak_in;
+    float32_t peak_out;
+    uint32_t index;
+
     config_app();
+
+    inputs[INPUT_SEL].make(x, SIG_LEN);
+
+    uint32_t n = 0;
 
     while (1)
     {
+        uint32_t i = n % SIG_LEN;
+
+        g_input = x[i];
+
+        n++;
+        probe_step();
+    }
+}
+
+static void input_sine(float32_t *pDst, uint32_t len)
+{
+    for(uint32_t n = 0; n < len; n++)
+    {
+        pDst[n] = SIG_AMP*sinf(TWO_PI*SIG_HZ*(float32_t)n/(float32_t)MODEL_HZ);
+    }
+}
+
+static void input_step(float32_t *pDst, uint32_t len)
+{
+    for(uint32_t n = 0; n < len; n++)
+    {
+        pDst[n] = (n < STEP_AT) ? 0.0f : SIG_AMP;
+    }
+}
+
+static void input_impulse(float32_t *pDst, uint32_t len)
+{
+    for(uint32_t n = 0; n < len; n++)
+    {
+        pDst[n] = (n == STEP_AT) ? SIG_AMP : 0.0f;
+    }
+}
+
+static void input_ramp(float32_t *pDst, uint32_t len)
+{
+    for (uint32_t n = 0; n < len; n++)
+    {
+        pDst[n] = SIG_AMP * (float32_t)n / (float32_t)(len - 1U);
     }
 }
