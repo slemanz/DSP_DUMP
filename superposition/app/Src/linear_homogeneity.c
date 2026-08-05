@@ -46,9 +46,48 @@ int main(void)
 {
     config_app();
 
+    for(uint32_t n = 0; n < SIG_LEN; n++)
+    {
+        x[n] = SIG_AMP*sinf(TWO_PI*SIG_HZ*((float32_t)n/(float32_t)MODEL_HZ));
+    }
+
+    printf("\r\nhomogeneity: max |f(k*x) - k*f(x)| over %lu samples\r\n", (unsigned long)SIG_LEN);
+    printf("%10s", "k =");
+
+    for (uint32_t g = 0; g < ARRAY_LEN(gains); g++)
+    {
+        printf(" %11.2f", gains[g]);
+    }
+    printf("\r\n");
+
+    for(uint32_t s = 0; s < ARRAY_LEN(systems); s++)
+    {
+        printf("%10s", systems[s].name);
+
+        for (uint32_t g = 0; g < ARRAY_LEN(gains); g++)
+        {
+            //printf(" %11.3e", homogeneity_error(systems[s].run, gains[g]));
+        }
+        printf("\r\n");
+    }
+
+    printf("\r\nfir and modulate are linear, so their columns are float rounding\r\n");
+    printf("and nothing else\r\n");
+    printf("\r\nthe signal peaks at %.2f and the clipper holds at %.2f, so clip\r\n", SIG_AMP, CLIP_LIMIT);
+    printf("looks perfectly linear until k passes %.2f\r\n", CLIP_LIMIT / SIG_AMP);
+    printf("square passes at k = 1 alone, where k*k and k are the same number\r\n");
+
+    printf("\r\nstreaming k = %.1f, one system every %lu passes\r\n", STREAM_GAIN, (unsigned long)HOLD_PASSES);
+
+    uint32_t n = 0;
+    uint32_t shown = ARRAY_LEN(systems);
+
     while(1)
     {
+        g_input = x[n % SIG_LEN];
 
+        n++;
+        probe_step();
     }
 }
 
