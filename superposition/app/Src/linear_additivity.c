@@ -55,7 +55,23 @@ int main(void)
     }
 }
 
+/*
+ * path_a takes the sum through the system in one pass, path_b takes each
+ * signal through on its own and adds the outputs afterwards.
+ */
 static float32_t additivity_error(system_fn run)
 {
+    float32_t max;
+    float32_t index;
 
+    run(sum_in, path_a, SIG_LEN);
+
+    run(x1, out1, SIG_LEN);
+    run(x2, out2, SIG_LEN);
+    arm_add_f32(out1, out2, path_b, SIG_LEN);
+
+    arm_sub_f32(path_a, path_b, diff, SIG_LEN);
+    arm_absmax_f32(diff, SIG_LEN, &max, &index);
+
+    return max;
 }
