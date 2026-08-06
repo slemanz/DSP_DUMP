@@ -45,3 +45,24 @@ system can pass it by accident. An amplifier that saturates at some voltage
 behaves perfectly linearly as long as the signal stays below that voltage, and a
 squarer passes at $k = 1$ alone, because that is where $k$ and $k^2$ are the
 same number. One value of $k$ proves nothing.
+
+## Additivity
+
+The second property is additivity: signals pass through the system without
+interacting. If $x_1[n]$ produces $y_1[n]$ and $x_2[n]$ produces $y_2[n]$, then:
+
+$$ x_1[n] + x_2[n] \longrightarrow y_1[n] + y_2[n] $$
+
+The two signals come out the other side as a sum and not as a mixture. Nothing
+new appears that was not in one of them already.
+
+What a nonlinear system leaves behind when this fails is not vague. Take a
+system that squares its input. The difference between the two routes is:
+
+$$ (x_1 + x_2)^2 - (x_1^2 + x_2^2) = 2 x_1 x_2 $$
+
+which is a product of the two signals, and a product of two sinusoids contains
+frequencies that were in neither of them. That is intermodulation, and it is why
+a distorting amplifier sounds dirty rather than merely loud. A saturating
+amplifier shows the same thing more plainly: two signals can each stay below the
+rail on their own and push past it together.
