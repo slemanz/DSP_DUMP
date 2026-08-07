@@ -51,7 +51,30 @@ int main(void)
     }
 }
 
+/*
+ * path_a is the shifted input put through the system. path_b is the original
+ * output, shifted by the same amount afterwards. The first s samples of the
+ * shifted input are zero and have no counterpart in the reference, so the
+ * comparison starts at n = s.
+ */
 static float32_t shift_error(system_fn run, uint32_t s)
 {
+    float32_t max;
+    uint32_t index;
 
+    run(x, y_ref, SIG_LEN);
+
+    for(uint32_t n = 0; n < SIG_LEN; n++)
+    {
+        shifted_in[n] = (n < s) ? 0.0f : x[n - s];
+        path_b[n]     = (n < s) ? 0.0f : y_ref[n - s];
+    }
+
+    run(shifted_in, path_a, SIG_LEN);
+
+    arm_fill_f32(0.0f, diff, SIG_LEN);
+    arm_sub_f32(&path_a[s], &path_b[s], &diff[s], SIG_LEN - s);
+    arm_absmax_f32(&diff[s], SIG_LEN - s, &max, &index);
+
+    return max;
 }
