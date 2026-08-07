@@ -45,9 +45,58 @@ int main(void)
 {
     config_app();
 
+    for (uint32_t n = 0; n < SIG_LEN; n++)
+    {
+        x[n] = SIG_AMP * sinf(TWO_PI * SIG_HZ * (float32_t)n / (float32_t)MODEL_HZ);
+    }
+
+    printf("\r\nshift invariance: max |f(x[n-s]) - y[n-s]| over the samples\r\n");
+    printf("where both are defined\r\n");
+    printf("%10s", "s =");
+
+    for (uint32_t k = 0; k < ARRAY_LEN(shifts); k++)
+    {
+        printf(" %11lu", (unsigned long)shifts[k]);
+    }
+
+    printf("\r\n");
+
+    for (uint32_t i = 0; i < ARRAY_LEN(systems); i++)
+    {
+        printf("%10s", systems[i].name);
+
+        for (uint32_t k = 0; k < ARRAY_LEN(shifts); k++)
+        {
+            printf(" %11.3e", shift_error(systems[i].run, shifts[k]));
+        }
+
+        printf("\r\n");
+    }
+
+    printf("\r\nclip and square fail the other two tests and pass this one:\r\n");
+    printf("they have no memory, so nothing in them knows what n is\r\n");
+    printf("modulate passes the other two and fails this one\r\n");
+    printf("\r\nexcept at s = %lu, where the carrier comes back around to where\r\n", (unsigned long)CARRIER_LEN);
+    printf("it started: a system that varies on a period looks shift invariant\r\n");
+    printf("to any shift that is a multiple of it\r\n");
+
+    printf("\r\nstreaming modulate with s = %lu\r\n", (unsigned long)STREAM_SHIFT);
+
+    (void)shift_error(system_modulate, STREAM_SHIFT);
+
+    uint32_t n = 0;
+
     while(1)
     {
+        uint32_t i = n % SIG_LEN;
 
+        g_input  = shifted_in[i];
+        g_path_a = path_a[i];
+        g_path_b = path_b[i];
+        g_error  = diff[i];
+
+        n++;
+        probe_step();
     }
 }
 
