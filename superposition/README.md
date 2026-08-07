@@ -66,3 +66,47 @@ frequencies that were in neither of them. That is intermodulation, and it is why
 a distorting amplifier sounds dirty rather than merely loud. A saturating
 amplifier shows the same thing more plainly: two signals can each stay below the
 rail on their own and push past it together.
+
+## Shift Invariance
+
+The third property is shift invariance: a shift in the input produces the same
+shift in the output and nothing else. For any shift $s$:
+
+$$ x[n - s] \longrightarrow y[n - s] $$
+
+The system does the same thing to a signal regardless of when the signal
+arrives.
+
+This is a separate question from the first two, though the three are usually
+named together. A system with no memory can be thoroughly nonlinear and still be
+shift invariant, because nothing inside it knows what $n$ is. A system that
+multiplies its input by a fixed waveform is linear, passes both of the other
+tests, and fails this one, because its gain depends on where a sample sits
+rather than on what the sample is worth. The four systems the examples test
+against make the point in one table:
+
+| System | Homogeneity | Additivity | Shift invariance |
+| --- | --- | --- | --- |
+| Three tap weighted average | pass | pass | pass |
+| Saturating amplifier | fail | fail | pass |
+| Squarer | fail | fail | pass |
+| Modulator | pass | pass | fail |
+
+A time varying system with a period hides from a careless test. If its gain
+repeats every 32 samples, a shift of 32 puts everything back where it was and
+the system looks invariant. As with homogeneity, one value proves nothing.
+
+## Superposition
+
+Superposition is the statement that ties the properties to something useful: the
+response of a linear system to a sum of signals is the sum of the responses to
+each individual signal. It follows from additivity and homogeneity together, and
+it is what makes a linear system tractable, because it means a hard input can be
+replaced by easy inputs whose answers are already known.
+
+Two operations come out of it. **Synthesis** adds two or more signals to form
+one. **Decomposition** is the reverse, breaking one signal into components that
+add back up to it. Because the system is linear, decomposing a signal, running
+each component through separately and synthesizing the outputs gives exactly the
+same result as running the whole signal through in one pass. The route taken is
+free, which means the route can be chosen for convenience.
