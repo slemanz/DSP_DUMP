@@ -110,3 +110,132 @@ add back up to it. Because the system is linear, decomposing a signal, running
 each component through separately and synthesizing the outputs gives exactly the
 same result as running the whole signal through in one pass. The route taken is
 free, which means the route can be chosen for convenience.
+
+## Impulse Decomposition
+
+An impulse is a single nonzero point in a string of zeros. Impulse decomposition
+breaks an $N$ sample signal into $N$ components, each of them $N$ samples long,
+each holding one point of the original and zeros everywhere else:
+
+$$ x_k[n] = \begin{cases} x[k] & n = k \\ 0 & n \neq k \end{cases} $$
+
+Adding all $N$ components back together returns the original signal, which is
+all the decomposition itself claims. What makes it the important one is what the
+components have in common: every one of them is the same impulse, scaled by
+$x[k]$ and moved to position $k$. So if the system's response to a single unit
+impulse is known, and the system is linear and shift invariant, then its
+response to every component is known, and superposition supplies the rest:
+
+$$ y[n] = \sum_{k} x[k] \, h[n - k] $$
+
+where $h[n]$ is that impulse response. This sum is the convolution, and it is
+the reason a linear shift invariant system is completely described by how it
+answers one impulse. CMSIS-DSP provides it as `arm_conv_f32`, and the third app
+in this module checks that decomposing by hand and calling the library land on
+the same numbers.
+
+## Step Decomposition
+
+Step decomposition breaks the same signal into $N$ components of $N$ samples,
+but the components are steps rather than impulses: each one is zero up to a
+point and holds a constant from there on. The constant is the difference between
+two neighbouring samples:
+
+$$ x_k[n] = \begin{cases} 0 & n < k \\ x[k] - x[k-1] & n \geq k \end{cases} $$
+
+with $x[-1]$ taken as zero. The differences are what make the components add
+back up to the original, since summing them telescopes down to $x[n]$. It also
+says what this decomposition is about: it characterizes a signal by how much it
+changes from sample to sample rather than by where it sits.
+
+Its counterpart to the impulse response is the step response $s[n]$, the output
+when a unit step goes in, and the two carry the same information. The step
+response is the running sum of the impulse response, and the impulse response is
+the first difference of the step response.
+
+## Watching the Signals in Ozone
+
+Every app in this module computes the same result twice, by two different
+routes, and the interesting part is the gap between them. All of them therefore
+stream four globals, declared in [`probe.h`](app/Inc/probe.h), which Ozone
+graphs as waveforms:
+
+| Variable | What it holds |
+| --- | --- |
+| `g_input` | what goes into the system |
+| `g_path_a` | the result by one route |
+| `g_path_b` | the result by the other |
+| `g_error` | the difference between them |
+
+While the two routes lie on top of each other and `g_error` is a flat line at
+zero, the property under test holds. When `g_error` lifts off zero and takes on
+a shape, that shape is what the system did wrong, and in the first three apps it
+has a name: clipping, a product of two signals, a carrier that failed to follow
+its signal.
+
+Ozone's Data Sampling window reads target memory over SWD while the program
+runs, using the J-Link high speed sampling interface, and the Timeline window
+plots what it collects. Sampling starts on its own when the program resumes and
+stops when it halts, so the whole procedure is to build, run `make debug` and
+press F5. The window is set up by the project script, in `OnProjectLoad`:
+
+```c
+  Edit.SysVar (VAR_HSS_SPEED, FREQ_5_KHZ);
+  Window.Show ("Data Sampling");
+  Window.Add ("Data Sampling", "g_input");
+  Window.Add ("Data Sampling", "g_path_a");
+  Window.Add ("Data Sampling", "g_path_b");
+  Window.Add ("Data Sampling", "g_error");
+  Window.Show ("Timeline");
+```
+
+`Window.Add` takes the window name and an expression, which has to evaluate to a
+number of eight bytes or less and whose operands have to be static variables.
+That constraint is the reason the probes are file scope globals rather than
+locals of `main`.
+
+The last two apps use the Timeline for something the serial port cannot show at
+all. They add one component to the reconstruction on every pass over the signal,
+so `g_path_b` starts at zero and grows toward `g_path_a` while `g_error` shrinks
+to nothing, and the signal can be watched being rebuilt one impulse, or one
+step, at a time.
+
+## Systems Under Test
+
+The four systems the apps run their tests against are defined together in
+[`systems.c`](app/Src/systems.c). Each one takes a whole buffer and keeps no
+state between calls, so a test is always a comparison between two pure results
+and never depends on what ran before it. A system holding its own history in a
+`static` would make every table in this module depend on the order the tests
+happened to run in.
+
+## Apps
+
+Each app is a self-contained `main` that prints its table once and then streams
+the probes, so `make monitor` catches the numbers and the Timeline shows the
+waveforms.
+
+0. [Systems tour](app/Src/systems_tour.c): no property and no comparison, just
+   one input sent through one system so the four can be told apart before they
+   are used to test anything. Three defines choose the input shape, the system
+   and the amplitude; the terminal prints the four systems side by side on the
+   first twelve samples and the Timeline carries the shape. An impulse through
+   the filter prints its three coefficients, which is the impulse response the
+   fourth app is built on.
+1. [Homogeneity](app/Src/linear_homogeneity.c): the four systems tested at five
+   gains, showing where a nonlinear system passes by accident, then streaming a
+   linear and a saturating system in alternation so the flat error and the
+   shaped one can be compared in the same trace.
+2. [Additivity](app/Src/linear_additivity.c): two sinusoids sent through
+   together and separately, with the squarer's residual checked against
+   $2 x_1 x_2$ to show that what a nonlinear system adds is a signal and not an
+   error.
+3. [Shift invariance](app/Src/linear_shift.c): the same four systems at five
+   shifts, including the shift equal to the modulator's own period, where a time
+   varying system looks invariant.
+4. [Impulse decomposition](app/Src/linear_impulse.c): a 25 sample signal broken
+   into 25 impulses, run through the system one at a time and synthesized,
+   checked against one direct pass and against `arm_conv_f32`.
+5. [Step decomposition](app/Src/linear_step.c): the same signal broken into
+   steps, with the step response shown to be the running sum of the impulse
+   response, and the output rebuilt from the step response alone.
