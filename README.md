@@ -26,6 +26,8 @@ In reading order:
   sampling has to be to keep the signal intact.
 - [Linear Systems and Superposition](superposition): the properties that make a
   system linear, and the decomposition they allow.
+- [Convolution](convolution): the operation that turns an impulse response into
+  the output of a system for any input.
 - [Discrete Fourier Transform](embedded_c/dft): moving a signal between the
   time domain and the frequency domain.
 - [Template](template): the bare-metal STM32F411 project skeleton the examples
