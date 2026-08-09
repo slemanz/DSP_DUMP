@@ -1,6 +1,6 @@
 CC=arm-none-eabi-gcc
 TARGET=flash
-APP ?= main
+APP ?= conv_signals
 
 MACH=-mcpu=cortex-m4
 FLOAT=-mfloat-abi=hard -mfpu=fpv4-sp-d16
@@ -48,6 +48,8 @@ OBJS		+= $(BUILD_DIR)/syscalls.o
 OBJS		+= $(BUILD_DIR)/startup.o
 
 OBJS		+= $(BUILD_DIR)/signals.o
+OBJS		+= $(BUILD_DIR)/probe.o
+OBJS		+= $(BUILD_DIR)/conv.o
 
 DRIVERS		+= $(BUILD_DIR)/driver_clock.o
 DRIVERS		+= $(BUILD_DIR)/driver_systick.o
@@ -80,11 +82,29 @@ $(BUILD_DIR)/$(TARGET).elf: $(OBJS) $(DRIVERS)
 	$(OBJCOPY) -O binary $(BUILD_DIR)/$(TARGET).elf $(BUILD_DIR)/$(TARGET).bin
 	arm-none-eabi-size $(BUILD_DIR)/$(TARGET).elf
 
-main:
-	$(MAKE) all APP=main
+conv_signals:
+	$(MAKE) all APP=conv_signals
 
-board_test:
-	$(MAKE) all APP=board_test
+conv_by_hand:
+	$(MAKE) all APP=conv_by_hand
+
+conv_algorithm:
+	$(MAKE) all APP=conv_algorithm
+
+conv_output:
+	$(MAKE) all APP=conv_output
+
+conv_kernels:
+	$(MAKE) all APP=conv_kernels
+
+conv_cmsis:
+	$(MAKE) all APP=conv_cmsis
+
+conv_timing:
+	$(MAKE) all APP=conv_timing
+
+running_sum:
+	$(MAKE) all APP=running_sum
 
 load:
 	jlink flash.jlink
