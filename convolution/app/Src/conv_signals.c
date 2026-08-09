@@ -21,8 +21,35 @@ int main(void)
 
     config_app();
 
+    arm_accumulate_f32(lowpass_6khz, LOWPASS_LEN, &sum);
+
+    printf("\r\ninput  %lu samples, 1 kHz + 15 kHz at 48 kHz\r\n", (unsigned long)X_LEN);
+    printf("kernel %lu taps, summing to %.4f\r\n", (unsigned long)LOWPASS_LEN, sum);
+    printf("output %lu samples once they are convolved\r\n", (unsigned long)Y_LEN);
+
+    uint32_t i = 0;
+    uint32_t j = 0;
+    
     while(1)
     {
+        g_x = input_signal_f32_1kHz_15kHz[i];
+        g_h = lowpass_6khz[j];
 
+        i++;
+        j++;
+
+        /* the kernel is short, so it wraps and repeats its shape while the
+         * input plays once. Nothing is lined up here, only shown. */
+        if (i == X_LEN)
+        {
+            i = 0;
+        }
+
+        if (j == LOWPASS_LEN)
+        {
+            j = 0;
+        }
+
+        probe_step();
     }
 }

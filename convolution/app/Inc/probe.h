@@ -3,7 +3,7 @@
 
 #include "arm_math.h"
 
-#define STEP_MS         2U
+#define STEP_MS         100U
 
 #define ARRAY_LEN(a)    (sizeof(a) / sizeof((a)[0]))
 
