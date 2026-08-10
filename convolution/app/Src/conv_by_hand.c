@@ -35,6 +35,72 @@ int main(void)
 
     config_app();
 
+    printf("\r\n%lu input samples and %lu taps, so %lu output samples\r\n\r\n", (unsigned long)X_LEN, (unsigned long)H_LEN, (unsigned long)Y_LEN);
+
+    printf("%9s", "n");
+
+    for (uint32_t n = 0; n < Y_LEN; n++)
+    {
+        printf("%7lu", (unsigned long)n);
+    }
+    printf("\r\n");
+
+    for (uint32_t i = 0; i < X_LEN; i++)
+    {
+        printf("x[%lu]=%+.1f", (unsigned long)i, x[i]);
+
+        for (uint32_t n = 0; n < Y_LEN; n++)
+        {
+            if ((n < i) || (n >= (i + H_LEN)))
+            {
+                printf("      .");
+            }
+            else
+            {
+                printf("%7.3f", x[i] * h[n - i]);
+            }
+        }
+
+        printf("\r\n");
+    }
+
+    conv_scatter(x, X_LEN, h, H_LEN, y);
+
+    printf("%9s", "");
+
+    for (uint32_t n = 0; n < Y_LEN; n++)
+    {
+        printf("-------");
+    }
+
+    printf("\r\n%9s", "y");
+
+    for (uint32_t n = 0; n < Y_LEN; n++)
+    {
+        printf("%7.3f", y[n]);
+    }
+
+    printf("\r\n");
+
+    /* Adding a column costs a multiply and an add per tap, so the whole table
+     * is X_LEN * H_LEN multiply accumulates and nothing more. */
+    printf("\r\n%lu multiply accumulates built that row\r\n", (unsigned long)(X_LEN * H_LEN));
+
+    /* Every input sample gets spread over the taps and nothing is lost, so the
+     * totals have to multiply out. This is why a kernel whose taps sum to one
+     * leaves the average of a signal where it found it. */
+    arm_accumulate_f32(x, X_LEN, &sum_x);
+    arm_accumulate_f32(h, H_LEN, &sum_h);
+    arm_accumulate_f32(y, Y_LEN, &sum_y);
+
+    printf("sum(x) %.3f times sum(h) %.3f is %.3f, and sum(y) is %.3f\r\n", sum_x, sum_h, sum_x * sum_h, sum_y);
+
+    arm_conv_f32(x, X_LEN, h, H_LEN, check);
+    arm_sub_f32(y, check, diff, Y_LEN);
+    arm_absmax_f32(diff, Y_LEN, &gap, &index);
+
+    printf("arm_conv_f32 lands on the same row, off by %.9f\r\n", gap);
+
     while(1)
     {
 
