@@ -38,8 +38,37 @@ int main(void)
 
     config_app();
 
+    arm_copy_f32(input_signal_f32_1kHz_15kHz, x, X_LEN);
+
+    conv_scatter(x, X_LEN, lowpass_6khz, LOWPASS_LEN, y_scatter);
+    conv_gather(x, X_LEN, lowpass_6khz, LOWPASS_LEN, y_gather);
+
+    arm_sub_f32(y_scatter, y_gather, diff, Y_LEN);
+    arm_absmax_f32(diff, Y_LEN, &gap, &index);
+
+    printf("\r\n%lu samples through %lu taps, %lu out\r\n", (unsigned long)X_LEN, (unsigned long)LOWPASS_LEN, (unsigned long)Y_LEN);
+    printf("scatter and gather differ by %.9f\r\n", gap);
+    printf("streaming the output as it is built, one input sample per pass\r\n");
+
     while(1)
     {
-        
+        for(uint32_t taken = 1; taken <= X_LEN; taken++)
+        {
+            /* the finished output is longer than what the first `taken`
+             * samples can reach, so clear the tail before filling the head */
+            arm_fill_f32(0.0f, partial, Y_LEN);
+            conv_scatter(x, taken, lowpass_6khz, LOWPASS_LEN, partial);
+
+            for(uint32_t n = 0; n < Y_LEN; n++)
+            {
+                g_x   = (n < X_LEN) ? x[n] : 0.0f;
+                g_h   = (n < LOWPASS_LEN) ? lowpass_6khz[n] : 0.0f;
+                g_y   = partial[n];
+                g_ref = y_scatter[n];
+
+                probe_step();
+            }
+        }
+
     }
 }
