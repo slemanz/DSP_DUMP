@@ -48,7 +48,33 @@ int main(void)
 {
     config_app();
 
+    arm_copy_f32(input_signal_f32_1kHz_15kHz, x, X_LEN);
+
+    printf("\r\nsame input through four kernels, %lu passes each\r\n", (unsigned long)PASSES_PER_KERNEL);
+
+    /* nothing is being compared here, so the fourth trace has nothing to carry */
+    g_ref = 0.0f;
+
     while (1)
     {
+        for(uint32_t s = 0; s < ARRAY_LEN(kernels); s++)
+        {
+            arm_fill_f32(0.0f, y, Y_LEN);
+            conv_scatter(x, X_LEN, kernels[s].taps, kernels[s].len, y);
+
+            printf("%s, %lu tap(s)\r\n", kernels[s].name, (unsigned long)kernels[s].len);
+
+            for (uint32_t p = 0; p < PASSES_PER_KERNEL; p++)
+            {
+                for (uint32_t n = 0; n < Y_LEN; n++)
+                {
+                    g_x = (n < X_LEN) ? x[n] : 0.0f;
+                    g_h = (n < kernels[s].len) ? kernels[s].taps[n] : 0.0f;
+                    g_y = y[n];
+
+                    probe_step();
+                }
+            }
+        }
     }
 }
