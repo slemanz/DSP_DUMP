@@ -31,8 +31,28 @@ int main(void)
 
     config_app();
 
+    conv_scatter(input_signal_f32_1kHz_15kHz, X_LEN, lowpass_6khz, LOWPASS_LEN, y_mine);
+    arm_conv_f32(input_signal_f32_1kHz_15kHz, X_LEN, lowpass_6khz, LOWPASS_LEN, y_cmsis);
+    arm_conv_f32(lowpass_6khz, LOWPASS_LEN, input_signal_f32_1kHz_15kHz, X_LEN, y_swapped);
+
+    arm_sub_f32(y_mine, y_cmsis, diff, Y_LEN);
+    arm_absmax_f32(diff, Y_LEN, &gap, &index);
+    printf("\r\nconv_scatter against arm_conv_f32: %.9f\r\n", gap);
+
+    arm_sub_f32(y_cmsis, y_swapped, diff, Y_LEN);
+    arm_absmax_f32(diff, Y_LEN, &gap, &index);
+    printf("input * kernel against kernel * input: %.9f\r\n", gap);
+
     while(1)
     {
+        for (uint32_t k = 0; k < Y_LEN; k++)
+        {
+            g_x   = (k < X_LEN) ? input_signal_f32_1kHz_15kHz[k] : 0.0f;
+            g_h   = (k < LOWPASS_LEN) ? lowpass_6khz[k] : 0.0f;
+            g_y   = y_mine[k];
+            g_ref = y_cmsis[k];
 
+            probe_step();
+        }
     }
 }
