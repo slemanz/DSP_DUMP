@@ -38,6 +38,37 @@ int main(void)
 
     config_app();
 
+    ns_per_cycle = 1.0e9f / (float32_t)clock_get();
+
+    cycles_start();
+    overhead = cycles_read();
+
+    cycles_start();
+    conv_scatter(input_signal_f32_1kHz_15kHz, X_LEN, lowpass_6khz, LOWPASS_LEN, y);
+    scatter = cycles_read() - overhead;
+
+    cycles_start();
+    conv_gather(input_signal_f32_1kHz_15kHz, X_LEN, lowpass_6khz, LOWPASS_LEN, y);
+    gather = cycles_read() - overhead;
+
+    cycles_start();
+    arm_conv_f32(input_signal_f32_1kHz_15kHz, X_LEN, lowpass_6khz, LOWPASS_LEN, y);
+    cmsis = cycles_read() - overhead;
+
+    /* the tick was stopped to free the timer, so put it back */
+    systick_init(TICK_HZ);
+
+    printf("\r\n%lu samples, %lu taps, %lu multiply accumulates each\r\n", (unsigned long)X_LEN, (unsigned long)LOWPASS_LEN, (unsigned long)(X_LEN * LOWPASS_LEN));
+    printf("core at %lu Hz, so %.1f ns per cycle, counter costs %lu cycles\r\n\r\n", (unsigned long)clock_get(), ns_per_cycle, (unsigned long)overhead);
+
+    printf("%-14s %10s %8s %7s\r\n", "", "cycles", "ms", "slower");
+    printf("%-14s %10lu %8.3f %6.1fx\r\n", "conv_scatter", (unsigned long)scatter, (float32_t)scatter * ns_per_cycle * 1.0e-6f, (float32_t)scatter / (float32_t)cmsis);
+    printf("%-14s %10lu %8.3f %6.1fx\r\n", "conv_gather", (unsigned long)gather, (float32_t)gather * ns_per_cycle * 1.0e-6f, (float32_t)gather / (float32_t)cmsis);
+    printf("%-14s %10lu %8.3f %6.1fx\r\n", "arm_conv_f32", (unsigned long)cmsis, (float32_t)cmsis * ns_per_cycle * 1.0e-6f, 1.0f);
+
+    printf("\r\n%.1f cycles per multiply accumulate in arm_conv_f32\r\n", (float32_t)cmsis / (float32_t)(X_LEN * LOWPASS_LEN));
+
+
     while(1)
     {
 
