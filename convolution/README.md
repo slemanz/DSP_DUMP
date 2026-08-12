@@ -130,3 +130,87 @@ not associative, so the order leaves rounding behind. The same thing shows up
 between $x * h$ and $h * x$ in [`conv_cmsis`](app/Src/conv_cmsis.c), which is a
 good reminder that commutative is a statement about arithmetic, not about
 floats.
+
+## Reading the Output
+
+Three features of the output signal are not obvious until you have seen them,
+and all three are visible in [`conv_output`](app/Src/conv_output.c).
+
+**It is longer.** $N + M - 1$, for the reason above.
+
+**It is late.** Every output sample is a weighted average of $M$ input samples,
+centred half a kernel back, so the output trails the input by
+
+$ \frac{M - 1}{2} $
+
+samples, which is 14 for the 29 tap kernel used here. This is the phase shift
+you see when the two are plotted together. It is the same 14 samples at every
+frequency only because the taps are symmetric; an asymmetric kernel delays
+different frequencies by different amounts, and that is a much worse problem
+than a constant delay.
+
+**Its ends are wrong.** For the first and last $M - 1$ samples the kernel hangs
+off the end of the input and part of the sum simply does not exist. Those are
+the startup and tail transients, and any measurement taken on the output has to
+skip them.
+
+## Kernels You Can Read at a Glance
+
+[`conv_kernels`](app/Src/conv_kernels.c) runs one input through four kernels
+short enough to read as sentences:
+
+| taps | what comes out |
+| --- | --- |
+| `{1.0}` | the input, untouched |
+| `{2.0}` | twice the input |
+| `{0,0,0,0,0,0,0,0,1.0}` | the input, eight samples late |
+| `{1.0, 0…0, 0.6}` | the input plus a quieter copy behind it |
+
+The first is the delta function, and it says
+
+$ x[n] * \delta[n] = x[n] $
+
+so the delta function is to convolution what 0 is to addition and 1 is to
+multiplication. Make it taller and you have an amplifier, shorter and you have
+an attenuator:
+
+$ x[n] * k \, \delta[n] = k \, x[n] $
+
+Move it right and you have a delay:
+
+$ x[n] * \delta[n - s] = x[n - s] $
+
+Moving it left would be an advance, and no real time system can do that, because
+it would mean producing output before the input arrives. Use two deltas instead
+of one and you have an echo, which is the whole of that effect in one line of
+coefficients.
+
+None of this is filtering. The point is narrower and worth more: the kernel is
+not a setting the system takes, the kernel is the system.
+
+## Convolution as a Filter
+
+The signal in [`signals.c`](app/Src/signals.c) is a 1 kHz sine with a 15 kHz
+sine at half amplitude riding on it, sampled at 48 kHz:
+
+$ x[n] = \sin\!\left(\frac{2\pi \cdot 1000 \, n}{48000}\right) + \tfrac{1}{2}\sin\!\left(\frac{2\pi \cdot 15000 \, n}{48000}\right) $
+
+The kernel in [`conv.c`](app/Src/conv.c) is 29 taps of a sinc weighted by a
+Hamming window,
+
+$ h[i] = \mathrm{sinc}\!\left(2 f_c \left(i - \tfrac{M}{2}\right)\right) \left(0.54 - 0.46 \cos\frac{2 \pi i}{M}\right) $
+
+with $f_c = 6000 / 48000$ and $M = 28$, then divided through by its own sum so
+the taps total 1. The sinc is the ideal low pass and the window is what lets it
+be cut to 29 points without falling apart. The same formula reproduces the
+`firCoeffs32` array that ships with the CMSIS-DSP FIR example exactly, so these
+are not arbitrary numbers.
+
+Convolve the two and the 15 kHz component comes out at 0.12% of what it was
+while the 1 kHz passes untouched. On the board the evidence is one line: the
+input peaks at 1.3195, because 1.0 of slow wave plus 0.5 of fast one, and the
+output peaks at 1.0020.
+
+That is a finite impulse response filter, and it was built by choosing 29
+numbers and running the loop from the previous section. Filter design, in the
+end, is the question of which 29 numbers.
