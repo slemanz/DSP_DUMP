@@ -15,6 +15,11 @@ void systick_init(uint32_t tick_hz);
 uint64_t ticks_get(void);
 void ticks_delay(uint64_t delay);
 
+#define SYSTICK_MAX_RELOAD                  0x00FFFFFFU
+
+void cycles_start(void);
+uint32_t cycles_read(void);
+
 void systick_counter(uint8_t EnorDi);
 void systick_interrupt(uint8_t EnorDi);
 void systick_deinit(void);
