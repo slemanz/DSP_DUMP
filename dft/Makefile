@@ -1,6 +1,6 @@
 CC=arm-none-eabi-gcc
 TARGET=flash
-APP ?= main
+APP ?= dft_spectrum
 
 MACH=-mcpu=cortex-m4
 FLOAT=-mfloat-abi=hard -mfpu=fpv4-sp-d16
@@ -80,11 +80,26 @@ $(BUILD_DIR)/$(TARGET).elf: $(OBJS) $(DRIVERS)
 	$(OBJCOPY) -O binary $(BUILD_DIR)/$(TARGET).elf $(BUILD_DIR)/$(TARGET).bin
 	arm-none-eabi-size $(BUILD_DIR)/$(TARGET).elf
 
-main:
-	$(MAKE) all APP=main
+dft_by_hand:
+	$(MAKE) all APP=dft_by_hand
 
-board_test:
-	$(MAKE) all APP=board_test
+dft_spectrum:
+	$(MAKE) all APP=dft_spectrum
+
+dft_leakage:
+	$(MAKE) all APP=dft_leakage
+
+dft_inverse:
+	$(MAKE) all APP=dft_inverse
+
+dft_synthesis:
+	$(MAKE) all APP=dft_synthesis
+
+dft_cmsis:
+	$(MAKE) all APP=dft_cmsis
+
+dft_timing:
+	$(MAKE) all APP=dft_timing
 
 load:
 	jlink flash.jlink
