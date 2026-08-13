@@ -28,8 +28,8 @@ In reading order:
   system linear, and the decomposition they allow.
 - [Convolution](convolution): the operation that turns an impulse response into
   the output of a system for any input.
-- [Discrete Fourier Transform](embedded_c/dft): moving a signal between the
-  time domain and the frequency domain.
+- [Discrete Fourier Transform](dft): moving a signal between the time domain
+  and the frequency domain.
 - [Template](template): the bare-metal STM32F411 project skeleton the examples
   are built on, with drivers, linker and build wired up.
 
