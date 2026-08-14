@@ -55,6 +55,74 @@ int main(void)
     config_app();
     probe_reset();
 
+    for (uint32_t n = 0; n < N; n++)
+    {
+        x[n] = DC
+             + (COS_AMP * cosf(TWO_PI * (float32_t)COS_BIN * (float32_t)n / (float32_t)N))
+             + (SIN_AMP * sinf(TWO_PI * (float32_t)SIN_BIN * (float32_t)n / (float32_t)N));
+    }
+
+    dft_forward(x, N, re, im);
+
+    printf("\r\nx[n] = %.1f + %.1f*cos(2pi*%lu*n/%lu) + %.1f*sin(2pi*%lu*n/%lu)\r\n\r\n",
+           DC, COS_AMP, (unsigned long)COS_BIN, (unsigned long)N,
+           SIN_AMP, (unsigned long)SIN_BIN, (unsigned long)N);
+
+    printf("      n ");
+
+    for (uint32_t n = 0; n < N; n++)
+    {
+        printf("%8lu", (unsigned long)n);
+    }
+
+    printf("\r\n   x[n] ");
+
+    for (uint32_t n = 0; n < N; n++)
+    {
+        printf("%8.3f", x[n]);
+    }
+
+    printf("\r\n\r\nthe eight products behind two of the bins, and their totals\r\n\r\n");
+    show_products(COS_BIN);
+    show_products(COS_BIN + 2U);
+
+    printf("\r\n%5s %8s %8s   %s\r\n", "k", "ReX", "ImX", "what the bin found");
+
+    for (uint32_t k = 0; k < BINS; k++)
+    {
+        printf("%5lu %8.3f %8.3f", (unsigned long)k, re[k], im[k]);
+
+        if (k == 0U)
+        {
+            printf("   the constant, times %lu\r\n", (unsigned long)N);
+        }
+        else if (k == COS_BIN)
+        {
+            printf("   the cosine, times %lu/2\r\n", (unsigned long)N);
+        }
+        else if (k == SIN_BIN)
+        {
+            printf("   the sine, times %lu/2\r\n", (unsigned long)N);
+        }
+        else
+        {
+            printf("   nothing\r\n");
+        }
+    }
+
+    /* Bin 0 multiplies the signal by a wave that is 1 everywhere, so all N
+     * samples add up. Every other bin multiplies by a wave that spends half its
+     * time negative, so only N/2 worth survives. That is the whole reason the
+     * inverse transform divides bin 0 by N and the rest by N/2. Bin N/2 is the
+     * other special one, an alternating wave that behaves like bin 0. */
+    printf("\r\n%.1f * %lu = %.1f, and %.1f * %lu/2 = %.1f, and %.1f * %lu/2 = %.1f\r\n",
+           DC, (unsigned long)N, re[0],
+           COS_AMP, (unsigned long)N, re[COS_BIN],
+           SIN_AMP, (unsigned long)N, im[SIN_BIN]);
+    printf("so undoing a bin means dividing by %lu at k=0 and k=%lu, by %lu/2 elsewhere\r\n",
+           (unsigned long)N, (unsigned long)(N / 2U), (unsigned long)N);
+
+
     while(1)
     {
     }

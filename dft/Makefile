@@ -48,6 +48,8 @@ OBJS		+= $(BUILD_DIR)/syscalls.o
 OBJS		+= $(BUILD_DIR)/startup.o
 
 OBJS		+= $(BUILD_DIR)/signals.o
+OBJS		+= $(BUILD_DIR)/probe.o
+OBJS		+= $(BUILD_DIR)/dft.o
 
 DRIVERS		+= $(BUILD_DIR)/driver_clock.o
 DRIVERS		+= $(BUILD_DIR)/driver_systick.o
