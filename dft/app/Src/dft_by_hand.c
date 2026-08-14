@@ -36,7 +36,18 @@ static float32_t im[BINS];
 // arriving instead of just appearing
 static void show_products(uint32_t k)
 {
+    float32_t total = 0.0f;
 
+    printf("  k=%lu  ", (unsigned long)k);
+
+    for(uint32_t i = 0; i < N; i++)
+    {
+        float32_t p = x[i] * cosf(TWO_PI * (float32_t)k * (float32_t)i / (float32_t)N);
+
+        total += p;
+        printf("%8.3f", p);
+    }
+    printf("%9.3f\r\n", total);
 }
 
 int main(void)
