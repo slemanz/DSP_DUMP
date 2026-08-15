@@ -111,3 +111,72 @@ This matters more than it sounds. The test signal in
 at both of its own frequencies and every bit of its amplitude sits in `ImX`.
 [`dft_spectrum`](app/Src/dft_spectrum.c) prints all three columns side by side
 so that is visible rather than assumed.
+
+## The Window Decides What You See
+
+The transform has no idea the signal continues past the window it was given. It
+treats the window as one period of something that repeats forever. If the window
+holds a whole number of periods, the repeats join up smoothly and each frequency
+lands on exactly one bin. If it does not, the joint is a step, a step is broad in
+frequency, and energy that belonged in one bin smears across its neighbours.
+That smearing is called leakage.
+
+At 48 kHz a 1 kHz wave takes 48 samples per period. A window of 192 samples
+holds four of them and the spectrum is two clean spikes. A window of 320 holds
+6.667, and the same signal through the same code gives this instead:
+
+```
+    k        Hz  magnitude
+    7    1050.0    130.374
+  100   15000.0     80.292
+    6     900.0     68.341
+    8    1200.0     31.335
+```
+
+The 15 kHz component is still exactly on a bin and still sharp. The 1 kHz has
+spread over three bins and none of them is at 1000 Hz. On a plot that reads as
+one spike and one low hill, and the natural conclusion, that the transform lost
+a frequency, is wrong. [`dft_leakage`](app/Src/dft_leakage.c) runs both windows
+back to back so the difference cannot be blamed on anything else.
+
+The fix is to choose the window as a whole number of periods, or to taper its
+ends so there is no step to be broad about. Window functions are the subject of
+their own chapter; choosing the length is free and worth doing first.
+
+## Round Trip
+
+[`dft_inverse`](app/Src/dft_inverse.c) sends the signal out and brings it back:
+
+$ x[i] = \sum_{k=0}^{N/2} \bar{\mathrm{Re}}X[k] \cos\!\left(\frac{2 \pi k i}{N}\right)
++ \sum_{k=0}^{N/2} \bar{\mathrm{Im}}X[k] \sin\!\left(\frac{2 \pi k i}{N}\right) $
+
+where the bars mean the bins have been scaled back down, by $N$ at $k = 0$ and
+$k = N/2$ and by $N/2$ everywhere else. On the two tone signal the round trip
+comes back within 0.002% of the signal's own height, and the difference trace on
+the debugger is a flat line.
+
+The bookkeeping is worth one look. Two arrays of 97 points is 194 numbers, and
+192 went in. Nothing was gained: $\mathrm{ImX}[0]$ and $\mathrm{ImX}[N/2]$ are
+sums of sines that are zero at every sample, so they are always zero. Drop those
+two and the count matches exactly, which is why CMSIS-DSP packs the whole answer
+into $N$ floats.
+
+## Building a Square Wave
+
+[`dft_synthesis`](app/Src/dft_synthesis.c) is the opening claim made literal. It
+takes a square wave, transforms it, and adds the bins back one at a time while
+streaming the running total to the debugger. One harmonic is a sine. Three and
+the corners appear. Twelve and it is the square wave, exactly.
+
+```
+ 1 harmonic(s), up to  1000 Hz, peak 1.2714, overshoot 27.14%
+ 3 harmonic(s), up to  5000 Hz, peak 1.1774, overshoot 17.74%
+12 harmonic(s), up to 23000 Hz, peak 1.0000, overshoot  0.00%
+```
+
+The overshoot at the corners is Gibbs, and the textbook version of Gibbs never
+goes away no matter how many harmonics are added. It goes away here, and the
+reason is worth carrying. This square wave was sampled. Its period is 48
+samples, so it has exactly twelve harmonics below half the sampling rate and
+there is no thirteenth to add. The ringing the textbook describes lives between
+the samples, where a sampled signal has nothing to say.
