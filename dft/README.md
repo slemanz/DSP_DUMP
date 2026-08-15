@@ -180,3 +180,95 @@ reason is worth carrying. This square wave was sampled. Its period is 48
 samples, so it has exactly twelve harmonics below half the sampling rate and
 there is no thirteenth to add. The ringing the textbook describes lives between
 the samples, where a sampled signal has nothing to say.
+
+## CMSIS-DSP and the Cost of Doing It Directly
+
+`arm_rfft_fast_f32` computes the same spectrum, and
+[`dft_cmsis`](app/Src/dft_cmsis.c) is mostly about the two things that must be
+lined up before the numbers can be compared.
+
+The packing: slot 0 holds bin 0, slot 1 holds bin $N/2$, and the rest are real
+and imaginary in pairs. Reading it as a plain array of pairs puts the Nyquist
+bin where bin 1 belongs.
+
+The sign: CMSIS takes the sine sum with a minus in front and
+[`dft.c`](app/Src/dft.c) does not, so `ImX` comes back negated. Neither is more
+correct, and the magnitude does not notice, which is one more argument for
+plotting the magnitude.
+
+The two agree to about $10^{-4}$ on a 256 point window, and most of that gap
+belongs to the direct version. It accumulates 256 float additions per bin where
+the FFT reaches the same place in eight stages, so the fast one is also the more
+accurate one.
+
+[`dft_timing`](app/Src/dft_timing.c) measures what that costs. The direct
+transform is $N^2$ multiply accumulates and the FFT is closer to $N \log N$, so
+doubling the length roughly quadruples one and roughly doubles the other. It
+runs at 128 points rather than the 192 used elsewhere, because the cycle counter
+is 24 bits and can measure 1.048 s at 16 MHz and no further, and a direct
+transform of a few hundred points runs past that and wraps without saying so.
+The app checks its own measurement against that ceiling rather than trusting it.
+
+One practical note that has nothing to do with the mathematics and is worth more
+than most of it: `arm_rfft_fast_init_f32` pulls in twiddle tables for every
+length from 32 to 4096, while `arm_rfft_fast_init_256_f32` brings only what was
+asked for. Swapping one for the other took 77 kB off the image.
+
+## Watching the Signals in Ozone
+
+The transform has an input in one domain and an output in another, so the
+debugger carries both:
+
+| probe | carries |
+| --- | --- |
+| `g_x` | the signal going in |
+| `g_re` | `ReX`, the cosine amplitudes |
+| `g_im` | `ImX`, the sine amplitudes |
+| `g_mag` | the magnitude at each frequency |
+| `g_rebuilt` | the signal after a trip back |
+
+They are declared in [`probe.c`](app/Src/probe.c) and wired into the Data
+Sampling window by [`app.jdebug`](workspaces/app.jdebug), so every app opens the
+same way. The frequency traces are $N/2 + 1$ points against $N$ in the time
+traces, so they fill the left half of each sweep and sit at zero after, which is
+the shape of the answer to why a real spectrum is half as long as its signal.
+
+Every app calls `probe_reset` first, including the two that never stream
+anything. The linker runs with `--gc-sections`, so a probe that no app in the
+build mentions is dropped from the image, and Ozone then has nothing to attach
+that trace to and quietly shows one graph fewer.
+
+## Apps
+
+Each app is a self-contained `main` that prints its numbers once and then
+streams the probes, so `make monitor` catches the output and the Timeline shows
+the signals. Two of them compute a table and stop, and those two are worth
+reading on the terminal rather than in the debugger.
+
+0. [The transform by hand](app/Src/dft_by_hand.c): eight samples built from a
+   constant, one cosine and one sine, with the eight products behind two of the
+   bins printed so a bin that finds something and a bin that finds nothing can
+   be compared line by line. The scaling that the inverse transform has to undo
+   falls out of the last three rows rather than being asserted.
+1. [The spectrum of a real signal](app/Src/dft_spectrum.c): 192 samples through
+   the transform, reported as bin number, frequency in Hz, both halves of the
+   answer and the magnitude. A compile time knob swaps the input between one
+   sine, two sines and a square wave, and the `ReX` column shows why magnitude
+   is never one array on its own.
+2. [Leakage](app/Src/dft_leakage.c): the same signal and the same code through
+   a window that holds a whole number of periods and one that does not, showing
+   a frequency spread across three bins with none of them at the right place.
+3. [The round trip](app/Src/dft_inverse.c): forward and back, with the
+   difference carried on its own trace, and the accounting that shows 194
+   numbers came back from 192 without anything having been gained.
+4. [Building a square wave](app/Src/dft_synthesis.c): a square wave rebuilt one
+   harmonic at a time on the Timeline, with the overshoot at the corners
+   reported at each step and reaching zero at the twelfth, which is as many
+   harmonics as a sampled square wave has.
+5. [The library transform](app/Src/dft_cmsis.c): `arm_rfft_fast_f32` next to
+   the direct sum, with its packing unpicked and its sine convention flipped so
+   the two can be compared bin by bin.
+6. [Why the FFT exists](app/Src/dft_timing.c): the direct transform and the fast
+   one timed with SysTick as a cycle counter, checked against the counter's own
+   24 bit ceiling, and extrapolated out to the lengths where doing it directly
+   stops being an option.
