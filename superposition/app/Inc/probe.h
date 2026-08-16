@@ -3,17 +3,18 @@
 
 #include "arm_math.h"
 
-#define STEP_MS         2U
+#define STEP_MS         100U
 #define MODEL_HZ        500U
 #define TWO_PI          6.28318531f
 
 #define ARRAY_LEN(a)    (sizeof(a) / sizeof((a)[0]))
 
-extern volatile float32_t g_input;
-extern volatile float32_t g_path_a;
-extern volatile float32_t g_path_b;
-extern volatile float32_t g_error;
+extern volatile float32_t g_x;
+extern volatile float32_t g_before;
+extern volatile float32_t g_after;
+extern volatile float32_t g_gap;
 
+void probe_reset(void);
 void probe_step(void);
 
 #endif /* INC_PROBE_H_ */

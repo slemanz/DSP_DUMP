@@ -2,18 +2,39 @@
 #include "driver_systick.h"
 
 /*
- * Every app in this module compares two routes to the same result: the signal
- * taken through the system whole, against the signal taken apart, put through
- * the system in pieces and put back together. These four values carry that
- * comparison to Ozone, and they are globals because the data sampling window
- * only accepts expressions whose operands are static variables.
+ * Every property in this module is one question asked about a different
+ * operation: does it matter whether the operation happens before the system or
+ * after it? Scaling, adding, shifting, splitting a signal into pieces. On a
+ * linear shift invariant system the answer is always no, and that is the only
+ * thing the four properties are saying.
+ *
+ * g_before is the route where the operation happens first, g_after is the route
+ * where the system happens first, and g_gap is what is left between them. The
+ * property holds wherever g_gap is a flat line at zero.
+ *
+ * They are globals because the data sampling window only accepts expressions
+ * whose operands are static variables.
  */
-volatile float32_t g_input;
-volatile float32_t g_path_a;
-volatile float32_t g_path_b;
-volatile float32_t g_error;
+volatile float32_t g_x;
+volatile float32_t g_before;
+volatile float32_t g_after;
+volatile float32_t g_gap;
 
-// holds the loop to one step per STEP_MS, so the graph advances at a rate the
+/*
+ * Every app calls this. The linker runs with --gc-sections, so a probe that no
+ * app in the build mentions is dropped from the image, and Ozone then has
+ * nothing to attach that trace to and quietly draws one graph fewer. Touching
+ * all four here keeps the window the same across the module.
+ */
+void probe_reset(void)
+{
+    g_x      = 0.0f;
+    g_before = 0.0f;
+    g_after  = 0.0f;
+    g_gap    = 0.0f;
+}
+
+// holds the loop to one sample per STEP_MS, so the graph advances at a rate the
 // debug probe can follow
 void probe_step(void)
 {
