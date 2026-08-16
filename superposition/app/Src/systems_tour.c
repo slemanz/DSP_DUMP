@@ -26,7 +26,7 @@
 *                       THE THREE KNOBS                     *
 *************************************************************/
 
-#define INPUT_SEL       0U      // 0 sine | 1 step | 2 impulse | 3 ramp
+#define INPUT_SEL       3U      // 0 sine | 1 step | 2 impulse | 3 ramp
 #define SYSTEM_SEL      1U      // 0 fir  | 1 clip | 2 square  | 3 modulate
 #define SIG_AMP         1.0f    // how tall the input is; the clipper holds at 0.6
 
@@ -72,6 +72,7 @@ int main(void)
     uint32_t index;
 
     config_app();
+    probe_reset();
 
     inputs[INPUT_SEL].make(x, SIG_LEN);
 
@@ -111,17 +112,15 @@ int main(void)
     printf("\r\nstreaming %s through %s to the graph\r\n", inputs[INPUT_SEL].name, systems[SYSTEM_SEL].name);
 
     /* one route through one system, so the fourth trace has nothing to carry */
-    g_path_b = 0.0f;
-
     uint32_t n = 0;
 
     while (1)
     {
         uint32_t i = n % SIG_LEN;
 
-        g_input = x[i];
-        g_path_a = y[SYSTEM_SEL][i];
-        g_error  = diff[i];
+        g_x     = x[i];
+        g_after = y[SYSTEM_SEL][i];
+        g_gap   = diff[i];
 
         n++;
         probe_step();
