@@ -1,107 +1,122 @@
 /*
- * Step decomposition breaks the same N sample signal into N signals, but the
- * pieces are steps rather than impulses: component k is zero up to k and then
- * holds a constant from k onward. The constant is the difference between two
- * neighbouring samples, which is what makes the pieces add back up to the
- * original, and what makes this decomposition a statement about how much the
- * signal changes rather than about where it sits.
+ * Step decomposition: the same signal split into steps instead of impulses.
  *
- * Its counterpart to the impulse response is the step response, and the two
- * carry the same information: one is the running sum of the other.
+ * Piece k is flat at zero until sample k and then holds a constant from there
+ * to the end, and the constant is x[k] - x[k-1], the amount the signal changed
+ * at that sample. Stacking those steps rebuilds the signal, because each one
+ * contributes exactly the change it is named after and the changes telescope
+ * back to the original.
  *
- *     make linear_step && make load && make monitor
+ * The step response is what a single unit step becomes, and the first line of
+ * output below is the reason this decomposition is worth knowing: the
+ * differences of the step response are the impulse response. Measuring one
+ * gives the other, and a step is much easier to produce in a real circuit than
+ * an impulse is.
+ *
+ *     make linear_step && make load && make debug
  */
 #include <stdio.h>
 #include <math.h>
 #include "config.h"
-#include "arm_math.h"
 #include "probe.h"
 #include "systems.h"
 
 #define SIG_LEN     25U
+#define SHOW        5U
 
 static float32_t x[SIG_LEN];
+static float32_t whole[SIG_LEN];
 static float32_t delta[SIG_LEN];
-static float32_t comp[SIG_LEN];
-static float32_t comp_out[SIG_LEN];
-static float32_t rebuilt[SIG_LEN];
-static float32_t partial[SIG_LEN];
-static float32_t y_direct[SIG_LEN];
+static float32_t unit[SIG_LEN];
 static float32_t step_res[SIG_LEN];
-static float32_t work[SIG_LEN];
+static float32_t impulse[SIG_LEN];
+static float32_t h[SIG_LEN];
+static float32_t piece[SIG_LEN];
+static float32_t piece_out[SIG_LEN];
+static float32_t rebuilt[SIG_LEN];
+static float32_t gap[SIG_LEN];
 
-static void build_component(uint32_t k);
-static float32_t max_gap(const float32_t *pA, const float32_t *pB, uint32_t len);
+static void show_row(const char *name, const float32_t *pSrc)
+{
+    printf("%22s", name);
+
+    for (uint32_t n = 0; n < SHOW; n++)
+    {
+        printf(" %5.2f", (double)pSrc[n]);
+    }
+
+    printf("\r\n");
+}
+
+// piece k is flat at zero until k, then holds the change the signal made there
+static void take_piece(uint32_t k)
+{
+    for (uint32_t n = 0; n < SIG_LEN; n++)
+    {
+        piece[n] = (n < k) ? 0.0f : delta[k];
+    }
+}
 
 int main(void)
 {
+    float32_t worst;
+    uint32_t index;
+
     config_app();
+    probe_reset();
 
     for (uint32_t n = 0; n < SIG_LEN; n++)
     {
-        x[n] = 0.8f * sinf(TWO_PI * (float32_t)n / 16.0f) * (1.0f - (float32_t)n / 40.0f);
+        x[n] = 0.8f * sinf(TWO_PI * (float32_t)n / 16.0f)
+             * (1.0f - ((float32_t)n / 40.0f));
     }
 
-    // the height of each step is how far the signal moved at that sample,
-    // with nothing before the first one
+    system_fir(x, whole, SIG_LEN);
+
     for (uint32_t n = 0; n < SIG_LEN; n++)
     {
         delta[n] = (n == 0U) ? x[0] : (x[n] - x[n - 1U]);
     }
 
-    // the step response: a unit step in, and whatever comes out
-    arm_fill_f32(1.0f, comp, SIG_LEN);
-    system_fir(comp, step_res, SIG_LEN);
+    /* one unit step in, and one unit impulse in, so the two answers can be put
+     * next to each other */
+    arm_fill_f32(1.0f, unit, SIG_LEN);
+    system_fir(unit, step_res, SIG_LEN);
 
-    printf("\r\nstep decomposition of a %lu sample signal\r\n", (unsigned long)SIG_LEN);
-    printf("\r\nstep response s[n]:  ");
+    arm_fill_f32(0.0f, impulse, SIG_LEN);
+    impulse[0] = 1.0f;
+    system_fir(impulse, h, SIG_LEN);
 
-    for (uint32_t n = 0; n < 5U; n++)
+    printf("\r\n");
+    show_row("step response s[n]", step_res);
+
+    for (uint32_t n = 0; n < SIG_LEN; n++)
     {
-        printf(" %.2f", step_res[n]);
+        gap[n] = (n == 0U) ? step_res[0] : (step_res[n] - step_res[n - 1U]);
     }
 
-    printf("\r\nits differences:     ");
+    show_row("its differences", gap);
+    show_row("impulse response h[n]", h);
 
-    for (uint32_t n = 0; n < 5U; n++)
-    {
-        printf(" %.2f", (n == 0U) ? step_res[0] : (step_res[n] - step_res[n - 1U]));
-    }
+    printf("\r\nthe middle row is the bottom row. A step is easy to generate and\r\n");
+    printf("an impulse is not, so this is usually how h[n] gets measured.\r\n");
 
-    printf("\r\nthose differences are the impulse response\r\n");
-
-    /*
-     * Take the signal apart and put it straight back together, with nothing
-     * in between. Each component is a step, so the sum builds the signal as a
-     * staircase rather than one sample at a time.
-     */
     arm_fill_f32(0.0f, rebuilt, SIG_LEN);
 
     for (uint32_t k = 0; k < SIG_LEN; k++)
     {
-        build_component(k);
-        arm_add_f32(rebuilt, comp, rebuilt, SIG_LEN);
+        take_piece(k);
+        system_fir(piece, piece_out, SIG_LEN);
+        arm_add_f32(rebuilt, piece_out, rebuilt, SIG_LEN);
     }
 
-    printf("\r\nsynthesis without the system, max gap: %.9f\r\n", max_gap(rebuilt, x, SIG_LEN));
+    arm_sub_f32(rebuilt, whole, gap, SIG_LEN);
+    arm_absmax_f32(gap, SIG_LEN, &worst, &index);
+    printf("\r\n%lu steps through the system, added up: %.9f from the whole\r\n",
+           (unsigned long)SIG_LEN, (double)worst);
 
-    // now the same decomposition with the system in the middle
-    system_fir(x, y_direct, SIG_LEN);
-    arm_fill_f32(0.0f, rebuilt, SIG_LEN);
-
-    for (uint32_t k = 0; k < SIG_LEN; k++)
-    {
-        build_component(k);
-        system_fir(comp, comp_out, SIG_LEN);
-        arm_add_f32(rebuilt, comp_out, rebuilt, SIG_LEN);
-    }
-
-    printf("%lu steps through the system, max gap against one pass: %.9f\r\n", (unsigned long)SIG_LEN, max_gap(rebuilt, y_direct, SIG_LEN));
-
-    /*
-     * The same output straight from the step response: every component is the
-     * step response scaled by delta[k] and delayed by k.
-     */
+    /* and the same output again from the step response alone, never calling
+     * the system, the way linear_impulse rebuilt it from h[n] alone */
     arm_fill_f32(0.0f, rebuilt, SIG_LEN);
 
     for (uint32_t k = 0; k < SIG_LEN; k++)
@@ -112,56 +127,30 @@ int main(void)
         }
     }
 
-    printf("same result from the step response alone, max gap: %.9f\r\n", max_gap(rebuilt, y_direct, SIG_LEN));
-    printf("\r\nstreaming: one step added per pass, %lu passes to rebuild\r\n", (unsigned long)SIG_LEN);
+    arm_sub_f32(rebuilt, whole, gap, SIG_LEN);
+    arm_absmax_f32(gap, SIG_LEN, &worst, &index);
+    printf("from the step response alone, never calling the system: %.9f\r\n", (double)worst);
 
-    uint32_t n = 0;
-    uint32_t added = SIG_LEN;
-
-    while(1)
+    while (1)
     {
-        uint32_t i = n % SIG_LEN;
+        arm_fill_f32(0.0f, rebuilt, SIG_LEN);
 
-        if (i == 0U)
+        for (uint32_t k = 0; k < SIG_LEN; k++)
         {
-            if (added >= SIG_LEN)
+            take_piece(k);
+            system_fir(piece, piece_out, SIG_LEN);
+            arm_add_f32(rebuilt, piece_out, rebuilt, SIG_LEN);
+            arm_sub_f32(rebuilt, whole, gap, SIG_LEN);
+
+            for (uint32_t n = 0; n < SIG_LEN; n++)
             {
-                arm_fill_f32(0.0f, partial, SIG_LEN);
-                added = 0U;
+                g_x      = piece[n];
+                g_before = whole[n];
+                g_after  = rebuilt[n];
+                g_gap    = gap[n];
+
+                probe_step();
             }
-
-            build_component(added);
-            system_fir(comp, comp_out, SIG_LEN);
-            arm_add_f32(partial, comp_out, partial, SIG_LEN);
-            added++;
         }
-
-        g_input  = x[i];
-        g_path_a = y_direct[i];
-        g_path_b = partial[i];
-        g_error  = partial[i] - y_direct[i];
-
-        n++;
-        probe_step();
     }
-}
-
-// component k is flat at zero until k, then holds delta[k] to the end
-static void build_component(uint32_t k)
-{
-    for (uint32_t n = 0; n < SIG_LEN; n++)
-    {
-        comp[n] = (n < k) ? 0.0f : delta[k];
-    }
-}
-
-static float32_t max_gap(const float32_t *pA, const float32_t *pB, uint32_t len)
-{
-    float32_t max;
-    uint32_t index;
-
-    arm_sub_f32(pA, pB, work, len);
-    arm_absmax_f32(work, len, &max, &index);
-
-    return max;
 }
