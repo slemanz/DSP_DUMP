@@ -94,6 +94,9 @@ linear_additivity:
 linear_shift:
 	$(MAKE) all APP=linear_shift
 
+linear_superposition:
+	$(MAKE) all APP=linear_superposition
+
 linear_impulse:
 	$(MAKE) all APP=linear_impulse
 
