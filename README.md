@@ -30,11 +30,27 @@ In reading order:
   the output of a system for any input.
 - [Discrete Fourier Transform](dft): moving a signal between the time domain
   and the frequency domain.
+- [Digital Filter Design](filters): where the impulse response comes from, and
+  how the frequency response reports what was chosen.
+- [Clock Tree and Flash Latency](clock): running the core at 100 MHz instead of
+  16, and what the memory in front of it costs at that speed.
+- [Analog Input and the Sampling Clock](acquisition): reading a real sensor, and
+  driving the ADC from a timer so the sampling rate is a number and not a guess.
+- [Streaming and Block Processing](blocks): the two ways to hand one sample at a
+  time to an algorithm that wants a whole array.
+- [Fixed Point and Q Notation](fixed_point): representing fractions in integers,
+  what saturation is for, and what the speed is bought with.
+- [Optimization Strategies](optimization): one loop taken down a ladder of
+  compiler flags, hand transformations and SIMD instructions, measured at every
+  rung.
+- [The CMSIS-DSP Library](cmsis): what is in it, which routine answers which
+  question, and the conventions that are shared across all of them.
 - [Template](template): the bare-metal STM32F411 project skeleton the examples
   are built on, with drivers, linker and build wired up.
 
-The chapters still pointing into [`embedded_c/`](embedded_c) are the earlier
-material, being rewritten one at a time into modules of their own at the root.
+The first five chapters are the arithmetic, worked on signals that are already
+in memory. The rest is the machine those chapters run on: its clock, its
+converter, the shape data arrives in, and what can be traded to make it faster.
 The CMSIS-DSP archive they all link against lives in [`lib/`](lib) and is shared
 rather than copied per module.
 
