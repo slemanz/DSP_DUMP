@@ -1,0 +1,32 @@
+{
+	"folders": [
+        {
+            "name": "app",
+            "path": "../app"
+        },
+        {
+            "name": "drivers",
+            "path": "../drivers"
+        },
+        {
+            "name": "linkers",
+            "path": "../linkers"
+        },
+        {
+            "name": "lib",
+            "path": "../../lib"
+        },
+    ],
+    "settings": {
+        "C_Cpp.default.includePath": [
+            "${workspaceFolder:app}/Inc",
+            "${workspaceFolder:drivers}/Inc",
+            "${workspaceFolder:lib}/CMSIS-DSP/Include",
+            "${workspaceFolder:lib}/CMSIS-DSP/PrivateInclude",
+            "${workspaceFolder:lib}/CMSIS_6/CMSIS/Core/Include",
+        ],
+        "C_Cpp.default.compilerPath": "arm-none-eabi-gcc",
+        "C_Cpp.default.cStandard": "gnu99",
+        "C_Cpp.default.intelliSenseMode": "gcc-arm",
+    }
+}
