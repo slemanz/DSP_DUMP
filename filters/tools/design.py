@@ -105,6 +105,31 @@ def summary():
         print(f"{name:<13}{len(h):>5}{h.sum():>11.6f}"
               f"{gain(h, 10):>9.5f}{gain(h, 100):>9.5f}{gain(h, 500):>9.5f}")
 
+    print()
+    print("one cutoff and one length, three windows")
+    print(f"{'kernel':<13}{'taps':>5}{'stopband':>11}{'transition':>12}")
+    for name in ("lp_rect", "lp_hamming", "lp_blackman"):
+        h = KERNELS[name]
+        print(f"{name:<13}{len(h):>5}{stopband_db(h):>8.1f} dB"
+              f"{transition_hz(h):>9.1f} Hz")
+
+    print()
+    print("one cutoff and one window, three lengths")
+    print(f"{'kernel':<13}{'taps':>5}{'stopband':>11}{'transition':>12}{'delay':>7}")
+    for name in ("lp_31", "lp_hamming", "lp_201"):
+        h = KERNELS[name]
+        print(f"{name:<13}{len(h):>5}{stopband_db(h):>8.1f} dB"
+              f"{transition_hz(h):>9.1f} Hz{(len(h) - 1) // 2:>7}")
+
+    lp = KERNELS["lp_hamming"]
+    hp = spectral_inversion(lp)
+    impulse = np.zeros(len(lp))
+    impulse[(len(lp) - 1) // 2] = 1.0
+    print()
+    print("spectral inversion turns lp_hamming into the high pass that completes it")
+    print(f"  worst gap between lp + hp and a single impulse: "
+          f"{np.abs(lp + hp - impulse).max():.3e}")
+
 if __name__ == "__main__":
     summary()
     if "--write" in sys.argv:
