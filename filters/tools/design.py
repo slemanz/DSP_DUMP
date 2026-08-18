@@ -53,6 +53,49 @@ def gain(h, f_hz):
     freq, mag = response(h)
     return float(np.interp(f_hz, freq, mag))
 
+def stopband_db(h):
+    """Height of the worst ripple past the first null, in dB.
+
+    firwin puts the -6 dB point exactly on the cutoff, so the search starts
+    there, walks down to the first place the response stops falling, and takes
+    the largest thing left after it.
+    """
+    freq, mag = response(h)
+    tail = mag[np.argmax(mag <= 0.5):]
+    null = np.flatnonzero(tail[1:] >= tail[:-1])[0] + 1
+    return 20 * np.log10(tail[null:].max())
+
+
+def transition_hz(h):
+    """How far it takes to get from 99% of the passband down to 1%."""
+    freq, mag = response(h)
+    lo = freq[mag >= 0.99][-1]
+    hi = freq[(freq > lo) & (mag <= 0.01)][0]
+    return hi - lo
+
+
+def signals():
+    n = np.arange(SIG_LEN)
+    tone_10 = np.sin(2 * np.pi * 10 * n / FS)
+    tone_100 = np.sin(2 * np.pi * 100 * n / FS)
+    tone_500 = np.sin(2 * np.pi * 500 * n / FS)
+    three = tone_10 + tone_100 + tone_500
+
+    m = np.arange(NOISE_LEN)
+    rng = np.random.default_rng(NOISE_SEED)
+    noisy = np.sin(2 * np.pi * 10 * m / FS) + rng.normal(0, NOISE_SIGMA, NOISE_LEN)
+
+    return {
+        "sig_3tone": three,
+        "tone_10": tone_10,
+        "tone_100": tone_100,
+        "tone_500": tone_500,
+        "sig_noisy": noisy,
+        # what python gets for the same input through the same kernel, so the
+        # firmware can be checked against it rather than eyeballed
+        "ref_lp50": np.convolve(three, KERNELS["lp_50"]),
+    }
+
 def summary():
     print(f"fs = {FS:.0f} Hz, {SIG_LEN} samples holds 1, 10 and 50 whole periods")
     print()
