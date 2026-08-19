@@ -155,7 +155,30 @@ def write_all():
         head += f"extern const float32_t {name}[{(name + '_LEN').upper()}];\n"
     head += "\n#endif /* INC_KERNELS_H_ */\n"
     write("app/Inc/kernels.h", BANNER + head)
-    print("Write")
+
+    body = BANNER + '#include "kernels.h"\n\n'
+    for name, h in KERNELS.items():
+        body += as_c_array(name, h) + "\n"
+    write("app/Src/kernels.c", body)
+
+    sig = signals()
+    lengths = {"sig_noisy": "NOISE_LEN", "ref_lp50": "REF_LP50_LEN"}
+    head = ('#ifndef INC_TESTSIG_H_\n#define INC_TESTSIG_H_\n\n'
+            '#include "arm_math.h"\n\n'
+            f"#define TESTSIG_FS_HZ   {FS:.0f}U\n"
+            f"#define SIG_LEN         {SIG_LEN}\n"
+            f"#define NOISE_LEN       {NOISE_LEN}\n"
+            f"#define REF_LP50_LEN    {len(sig['ref_lp50'])}\n\n")
+    for name in sig:
+        head += f"extern const float32_t {name}[{lengths.get(name, 'SIG_LEN')}];\n"
+    head += "\n#endif /* INC_TESTSIG_H_ */\n"
+    write("app/Inc/testsig.h", BANNER + head)
+
+    body = BANNER + '#include "testsig.h"\n\n'
+    for name, values in sig.items():
+        body += as_c_array(name, values) + "\n"
+    write("app/Src/testsig.c", body)
+
 
 if __name__ == "__main__":
     summary()
