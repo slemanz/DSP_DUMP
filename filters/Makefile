@@ -1,6 +1,6 @@
 CC=arm-none-eabi-gcc
 TARGET=flash
-APP ?= main
+APP ?= fir_separate
 
 MACH=-mcpu=cortex-m4
 FLOAT=-mfloat-abi=hard -mfpu=fpv4-sp-d16
@@ -47,6 +47,11 @@ OBJS		+= $(BUILD_DIR)/config.o
 OBJS		+= $(BUILD_DIR)/syscalls.o
 OBJS		+= $(BUILD_DIR)/startup.o
 
+OBJS		+= $(BUILD_DIR)/testsig.o
+OBJS		+= $(BUILD_DIR)/kernels.o
+OBJS		+= $(BUILD_DIR)/probe.o
+OBJS		+= $(BUILD_DIR)/filters.o
+
 OBJS		+= $(BUILD_DIR)/signals.o
 
 DRIVERS		+= $(BUILD_DIR)/driver_clock.o
@@ -80,11 +85,26 @@ $(BUILD_DIR)/$(TARGET).elf: $(OBJS) $(DRIVERS)
 	$(OBJCOPY) -O binary $(BUILD_DIR)/$(TARGET).elf $(BUILD_DIR)/$(TARGET).bin
 	arm-none-eabi-size $(BUILD_DIR)/$(TARGET).elf
 
-main:
-	$(MAKE) all APP=main
+fir_smoothing:
+	$(MAKE) all APP=fir_smoothing
 
-board_test:
-	$(MAKE) all APP=board_test
+fir_windows:
+	$(MAKE) all APP=fir_windows
+
+fir_length:
+	$(MAKE) all APP=fir_length
+
+fir_inversion:
+	$(MAKE) all APP=fir_inversion
+
+fir_separate:
+	$(MAKE) all APP=fir_separate
+
+fir_python:
+	$(MAKE) all APP=fir_python
+
+fir_cmsis:
+	$(MAKE) all APP=fir_cmsis
 
 load:
 	jlink flash.jlink
