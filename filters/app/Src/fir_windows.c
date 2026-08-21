@@ -34,12 +34,50 @@ static const char *const name[] = { "rectangular", "hamming", "blackman" };
  */
 static float32_t stopband(const float32_t *pH, uint32_t hLen)
 {
+    float32_t prev = 1.0f;
+    float32_t worst = 0.0f;
+    uint8_t past_null = 0U;
 
+    for(float32_t f = FC_HZ; f < (float32_t)TESTSIG_FS_HZ/2.0f; f += 0.5f)
+    {
+        float32_t g = fir_gain(pH, hLen, f, (float32_t)TESTSIG_FS_HZ);
+
+        if((past_null == 0U) && (g >= prev))
+        {
+            past_null = 1U;
+        }
+
+        if((past_null != 0U) && (g > worst))
+        {
+            worst = g;
+        }
+
+        prev = g;
+    }
+
+    return fir_db(worst);
 }
 
 /* how far it takes to get from 99% of the passband down to 1% */
 static float32_t transition(const float32_t *pH, uint32_t hLen)
 {
+    float32_t lo = 0.0f;
+
+    for (float32_t f = 0.0f; f < (float32_t)TESTSIG_FS_HZ / 2.0f; f += 0.5f)
+    {
+        float32_t g = fir_gain(pH, hLen, f, (float32_t)TESTSIG_FS_HZ);
+
+        if(g >= 0.99f)
+        {
+            lo = f;
+        }
+
+        if ((f > lo) && (g <= 0.01f))
+        {
+            return f - lo;
+        }
+    }
+
     return 0.0f;
 }
 
