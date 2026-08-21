@@ -81,4 +81,41 @@ int main(void)
     config_app();
     probe_reset();
 
+    printf("\r\nthe same hamming sinc at %.0f Hz, three lengths\r\n\r\n",
+           (double)FC_HZ);
+    printf("%6s %10s %12s %8s %12s\r\n",
+           "taps", "stopband", "transition", "delay", "mults/sample");
+
+    for (uint32_t k = 0U; k < ARRAY_LEN(kernel); k++)
+    {
+        printf("%6lu %7.1f dB %9.1f Hz %8lu %12lu\r\n",
+               (unsigned long)taps[k],
+               (double)stopband(kernel[k], taps[k]),
+               (double)transition(kernel[k], taps[k]),
+               (unsigned long)FIR_DELAY(taps[k]),
+               (unsigned long)taps[k]);
+    }
+
+    printf("\r\nthe stopband column does not move. the window set it and the"
+           " length cannot.\r\n");
+    printf("the transition halves when the taps double, and so does nothing"
+           " else.\r\n");
+
+    while (1)
+    {
+        for (uint32_t k = 0U; k < ARRAY_LEN(kernel); k++)
+        {
+            for (uint32_t i = 0U; i < SWEEP; i++)
+            {
+                float32_t f = ((float32_t)TESTSIG_FS_HZ / 2.0f) *
+                              (float32_t)i / (float32_t)(SWEEP - 1U);
+
+                g_h   = (i < taps[k]) ? kernel[k][i] : 0.0f;
+                g_mag = fir_db(fir_gain(kernel[k], taps[k], f,
+                                        (float32_t)TESTSIG_FS_HZ));
+                g_x   = f;
+                probe_step();
+            }
+        }
+    }
 }
