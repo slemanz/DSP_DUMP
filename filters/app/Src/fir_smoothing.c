@@ -55,8 +55,74 @@ int main(void)
     config_app();
     probe_reset();
 
+    uint32_t  span = NOISE_LEN - (2U * SETTLE);
+    float32_t sigma_in = residual_sigma(&sig_noisy[SETTLE], span);
+
+    printf("\r\n%u samples of a 10 Hz sine buried in noise\r\n", NOISE_LEN);
+    printf("standard deviation of the noise going in: %.4f\r\n\r\n",
+           (double)sigma_in);
+
+    printf("in the time domain, where it wins\r\n");
+    printf("%6s %10s %10s %10s\r\n", "taps", "sigma out", "measured", "sqrt(M)");
+
+    for (uint32_t k = 0U; k < ARRAY_LEN(taps); k++)
+    {
+        uint32_t m = taps[k];
+
+        fir_moving_average(kernel, m);
+        fir_apply(sig_noisy, NOISE_LEN, kernel, m, out);
+
+        float32_t sigma = residual_sigma(&out[SETTLE + FIR_DELAY(m)], span);
+
+        printf("%6lu %10.4f %10.2f %10.2f\r\n",
+               (unsigned long)m, (double)sigma,
+               (double)(sigma_in / sigma), (double)sqrtf((float32_t)m));
+    }
+
+    printf("\r\nin the frequency domain, where it loses\r\n");
+    printf("%6s %10s %10s %10s\r\n", "taps", "100 Hz", "500 Hz", "worst dB");
+
+    for (uint32_t k = 0U; k < ARRAY_LEN(taps); k++)
+    {
+        uint32_t  m = taps[k];
+        float32_t worst = 0.0f;
+
+        fir_moving_average(kernel, m);
+
+        /* walk past the first null, then keep the tallest thing after it */
+        for (float32_t f = (float32_t)TESTSIG_FS_HZ / (float32_t)m;
+             f < (float32_t)TESTSIG_FS_HZ / 2.0f; f += 1.0f)
+        {
+            float32_t g = fir_gain(kernel, m, f, (float32_t)TESTSIG_FS_HZ);
+
+            if (g > worst)
+            {
+                worst = g;
+            }
+        }
+
+        printf("%6lu %10.4f %10.4f %10.1f\r\n", (unsigned long)m,
+               (double)fir_gain(kernel, m, 100.0f, (float32_t)TESTSIG_FS_HZ),
+               (double)fir_gain(kernel, m, 500.0f, (float32_t)TESTSIG_FS_HZ),
+               (double)fir_db(worst));
+    }
+
+    printf("\r\na kernel of ones has its first null at fs/M, %.1f Hz for 11 taps\r\n",
+           (double)((float32_t)TESTSIG_FS_HZ / 11.0f));
+
+    fir_moving_average(kernel, 11U);
+    fir_apply(sig_noisy, NOISE_LEN, kernel, 11U, out);
+
+
     while(1)
     {
-
+        for (uint32_t n = 0U; n < NOISE_LEN; n++)
+        {
+            g_x   = sig_noisy[n];
+            g_y   = out[n + FIR_DELAY(11U)];
+            g_ref = clean_at(n);
+            g_h   = (n < 11U) ? kernel[n] : 0.0f;
+            probe_step();
+        }
     }
 }

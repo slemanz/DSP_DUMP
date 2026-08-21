@@ -52,8 +52,6 @@ OBJS		+= $(BUILD_DIR)/kernels.o
 OBJS		+= $(BUILD_DIR)/probe.o
 OBJS		+= $(BUILD_DIR)/filters.o
 
-OBJS		+= $(BUILD_DIR)/signals.o
-
 DRIVERS		+= $(BUILD_DIR)/driver_clock.o
 DRIVERS		+= $(BUILD_DIR)/driver_systick.o
 DRIVERS		+= $(BUILD_DIR)/driver_gpio.o
