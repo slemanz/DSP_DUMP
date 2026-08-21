@@ -87,8 +87,35 @@ int main(void)
     config_app();
     probe_reset();
 
+    printf("\r\nthe same sinc at %.0f Hz, %u taps, tapered three ways\r\n\r\n",
+           (double)FC_HZ, (unsigned)LP_RECT_LEN);
+    printf("%-13s %10s %12s\r\n", "window", "stopband", "transition");
+
+    for (uint32_t k = 0U; k < ARRAY_LEN(kernel); k++)
+    {
+        printf("%-13s %7.1f dB %9.1f Hz\r\n", name[k],
+               (double)stopband(kernel[k], LP_RECT_LEN),
+               (double)transition(kernel[k], LP_RECT_LEN));
+    }
+
+    printf("\r\ndeeper stopband, wider transition. the window buys one with"
+           " the other.\r\n");
+
     while(1)
     {
+        for (uint32_t k = 0U; k < ARRAY_LEN(kernel); k++)
+        {
+            for (uint32_t i = 0U; i < SWEEP; i++)
+            {
+                float32_t f = ((float32_t)TESTSIG_FS_HZ / 2.0f) *
+                              (float32_t)i / (float32_t)(SWEEP - 1U);
 
+                g_h   = (i < LP_RECT_LEN) ? kernel[k][i] : 0.0f;
+                g_mag = fir_db(fir_gain(kernel[k], LP_RECT_LEN, f,
+                                        (float32_t)TESTSIG_FS_HZ));
+                g_x   = f;
+                probe_step();
+            }
+        }
     }
 }
