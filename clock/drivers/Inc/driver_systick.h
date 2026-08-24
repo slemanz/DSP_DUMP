@@ -19,6 +19,11 @@ void systick_counter(uint8_t EnorDi);
 void systick_interrupt(uint8_t EnorDi);
 void systick_deinit(void);
 
+#define SYSTICK_MAX_RELOAD                  0x00FFFFFFU
+
+void cycles_start(void);
+uint32_t cycles_read(void);
+
 #define MAX_DELAY   0xFFFFFFFF
 
 #endif
