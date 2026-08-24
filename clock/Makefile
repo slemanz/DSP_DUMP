@@ -47,6 +47,9 @@ OBJS		+= $(BUILD_DIR)/config.o
 OBJS		+= $(BUILD_DIR)/syscalls.o
 OBJS		+= $(BUILD_DIR)/startup.o
 
+OBJS		+= $(BUILD_DIR)/probe.o
+OBJS		+= $(BUILD_DIR)/bench.o
+
 OBJS		+= $(BUILD_DIR)/signals.o
 
 DRIVERS		+= $(BUILD_DIR)/driver_clock.o
@@ -56,7 +59,7 @@ DRIVERS		+= $(BUILD_DIR)/driver_uart.o
 DRIVERS		+= $(BUILD_DIR)/driver_interrupt.o
 DRIVERS		+= $(BUILD_DIR)/driver_fpu.o
 DRIVERS		+= $(BUILD_DIR)/driver_adc.o
-
+DRIVERS		+= $(BUILD_DIR)/driver_flash.o
 
 PREREQ = $(BUILD_DIR)
 
@@ -80,11 +83,26 @@ $(BUILD_DIR)/$(TARGET).elf: $(OBJS) $(DRIVERS)
 	$(OBJCOPY) -O binary $(BUILD_DIR)/$(TARGET).elf $(BUILD_DIR)/$(TARGET).bin
 	arm-none-eabi-size $(BUILD_DIR)/$(TARGET).elf
 
-main:
-	$(MAKE) all APP=main
+clock_tree:
+	$(MAKE) all APP=clock_tree
 
-board_test:
-	$(MAKE) all APP=board_test
+clock_pll:
+	$(MAKE) all APP=clock_pll
+
+clock_verify:
+	$(MAKE) all APP=clock_verify
+
+clock_latency:
+	$(MAKE) all APP=clock_latency
+
+clock_cache:
+	$(MAKE) all APP=clock_cache
+
+clock_buses:
+	$(MAKE) all APP=clock_buses
+
+clock_speed:
+	$(MAKE) all APP=clock_speed
 
 load:
 	jlink flash.jlink
