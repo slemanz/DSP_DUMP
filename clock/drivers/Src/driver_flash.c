@@ -123,3 +123,36 @@ void flash_erase_sectors(uint32_t sector, uint32_t Len)
         sector_erase++;
     } while(length);
 }
+
+void flash_set_latency(uint32_t wait_states)
+{
+    FLASH->ACR = (FLASH->ACR & ~FLASH_ACR_LATENCY_MSK)
+               | (wait_states & FLASH_ACR_LATENCY_MSK);
+
+    /* the write is posted, so read it back before going any faster */
+    while ((FLASH->ACR & FLASH_ACR_LATENCY_MSK) != (wait_states & FLASH_ACR_LATENCY_MSK))
+    {
+    }
+}
+
+uint32_t flash_get_latency(void)
+{
+    return FLASH->ACR & FLASH_ACR_LATENCY_MSK;
+}
+
+void flash_art_config(uint8_t prefetch, uint8_t icache, uint8_t dcache)
+{
+    uint32_t acr = FLASH->ACR;
+
+    acr &= ~(FLASH_ACR_PRFTEN | FLASH_ACR_ICEN | FLASH_ACR_DCEN);
+    FLASH->ACR = acr;
+
+    FLASH->ACR |= (FLASH_ACR_ICRST | FLASH_ACR_DCRST);
+    FLASH->ACR &= ~(FLASH_ACR_ICRST | FLASH_ACR_DCRST);
+
+    if (prefetch == ENABLE) { acr |= FLASH_ACR_PRFTEN; }
+    if (icache   == ENABLE) { acr |= FLASH_ACR_ICEN; }
+    if (dcache   == ENABLE) { acr |= FLASH_ACR_DCEN; }
+
+    FLASH->ACR = acr;
+}
