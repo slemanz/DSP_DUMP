@@ -1,6 +1,6 @@
 CC=arm-none-eabi-gcc
 TARGET=flash
-APP ?= main
+APP ?= clock_tree
 
 MACH=-mcpu=cortex-m4
 FLOAT=-mfloat-abi=hard -mfpu=fpv4-sp-d16
@@ -49,8 +49,6 @@ OBJS		+= $(BUILD_DIR)/startup.o
 
 OBJS		+= $(BUILD_DIR)/probe.o
 OBJS		+= $(BUILD_DIR)/bench.o
-
-OBJS		+= $(BUILD_DIR)/signals.o
 
 DRIVERS		+= $(BUILD_DIR)/driver_clock.o
 DRIVERS		+= $(BUILD_DIR)/driver_systick.o
