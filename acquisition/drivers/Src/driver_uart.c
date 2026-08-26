@@ -38,6 +38,16 @@ void UART_PeriClockControl(UART_RegDef_t *pUARTx, uint8_t EnorDi)
     }
 }
 
+static uint32_t uart_pclk(UART_RegDef_t *pUARTx)
+{
+    if((pUARTx == UART1) || (pUARTx == UART6))
+    {
+        return clock_pclk2();
+    }
+
+    return clock_pclk1();
+}
+
 void UART_Init(UART_Config_t *pUARTConfig)
 {
     // temporary variable
@@ -90,7 +100,7 @@ void UART_Init(UART_Config_t *pUARTConfig)
     pUARTConfig->pUARTx->CR3 = tempreg;
 
     // *** Configuration of BRR (Baudrate) ***********************
-    pUARTConfig->pUARTx->BRR = compute_uart_div(clock_get(), pUARTConfig->UART_Baud);
+    pUARTConfig->pUARTx->BRR = compute_uart_div(uart_pclk(pUARTConfig->pUARTx), pUARTConfig->UART_Baud);
 }
 
 void UART_Init_table(const UART_Config_t *pUARTConfig, uint32_t Len)

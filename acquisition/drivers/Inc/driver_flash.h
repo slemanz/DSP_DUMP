@@ -16,6 +16,16 @@
 #define FLASH_PSIZE_X32                (2U)                                    
 #define FLASH_PSIZE_X64                (3U)                                    
 
+#define FLASH_ACR_LATENCY_MSK          (0x7UL << 0)
+#define FLASH_ACR_PRFTEN               (0x1UL << 8)
+#define FLASH_ACR_ICEN                 (0x1UL << 9)
+#define FLASH_ACR_DCEN                 (0x1UL << 10)
+#define FLASH_ACR_ICRST                (0x1UL << 11)
+#define FLASH_ACR_DCRST                (0x1UL << 12)
+
+/* 3.3 V supply: 30 MHz, 64 MHz, 90 MHz, 100 MHz */
+#define FLASH_LATENCY_16MHZ            0U
+#define FLASH_LATENCY_100MHZ           3U
 
 
 #define FLASH_CR_PSIZE_POS             (8U)                                    
@@ -41,15 +51,18 @@ void flash_lock_write(void);
 void flash_enable_write(void);
 void flash_disable_write(void);
 
-
 void flash_program_double_word(uint32_t address, uint64_t data);
 void flash_program_word(uint32_t address, uint32_t data);
 void flash_program_half_word(uint32_t address, uint16_t data);
 void flash_program_byte(uint32_t address, uint8_t data);
 void flash_program(uint32_t address, const uint8_t *data, uint32_t len);
 
-
 void flash_erase_sector(uint32_t sector);
 void flash_erase_sectors(uint32_t sector, uint32_t Len);
+
+
+void flash_set_latency(uint32_t wait_states);
+uint32_t flash_get_latency(void);
+void flash_art_config(uint8_t prefetch, uint8_t icache, uint8_t dcache);
 
 #endif /* INC_DRIVER_FLASH_H_ */

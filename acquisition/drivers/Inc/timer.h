@@ -56,4 +56,26 @@ void tim2_1hz_init(void);
 void tim2_pa3_out_compare(void);
 void tim2_pa3_pwm(void);
 
+/* Added to drivers/Inc/timer.h */
+
+#define CR1_ARPE            (1U << 7)
+#define DIER_UIE            (1U << 0)
+#define EGR_UG              (1U << 0)
+
+/* CR2 master mode: what this timer sends out on its TRGO line */
+#define CR2_MMS_POS         4U
+#define CR2_MMS_MSK         (0x7U << CR2_MMS_POS)
+#define CR2_MMS_UPDATE      (0x2U << CR2_MMS_POS)
+
+/* returns the rate it actually achieved, which is not always the one asked for */
+uint32_t timer_periodic_init(TIM_RegDef_t *pTIMx, uint32_t rate_hz);
+void     timer_trgo_on_update(TIM_RegDef_t *pTIMx);
+void     timer_interrupt_enable(TIM_RegDef_t *pTIMx, uint8_t irq_number);
+void     timer_clear_update(TIM_RegDef_t *pTIMx);
+uint32_t timer_rate_hz(TIM_RegDef_t *pTIMx);
+
+/* the two the reference manual lists for these; the repo header stops at exti */
+#define IRQ_NO_TIM2         28
+#define IRQ_NO_TIM3         29
+
 #endif

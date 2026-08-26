@@ -1,4 +1,6 @@
 #include "timer.h"
+#include "driver_clock.h"
+#include "driver_interrupt.h"
 
 
 /**************************************************************************
@@ -177,4 +179,69 @@ void tim2_pa3_pwm(void)
 
     // enable timer
     TIM2->CR1 = CR1_CEN;
+}
+
+/* Added to drivers/Src/timer.c */
+
+/*
+ * Sets a timer to roll over rate_hz times a second, and returns the rate it
+ * actually managed. The two are not always the same: the divisor has to be a
+ * whole number, so 100000000 / 3000 lands between two of them.
+ *
+ * The clock used is clock_timer_pclk1(), not clock_pclk1(). A timer on a
+ * divided APB bus runs at twice that bus, so computing the period from the bus
+ * clock gives a timer running at exactly double the rate asked for, and
+ * everything about it looks right.
+ */
+uint32_t timer_periodic_init(TIM_RegDef_t *pTIMx, uint32_t rate_hz)
+{
+    uint32_t src = clock_timer_pclk1();
+    uint32_t div = src / rate_hz;
+    uint32_t psc = 0U;
+
+    timer_PeriClockControl(pTIMx, ENABLE);
+
+    /* tim2 counts to 32 bits, the others to 16, so the others need a prescaler */
+    while (div > 0x10000U)
+    {
+        psc++;
+        div = src / ((psc + 1U) * rate_hz);
+    }
+
+    pTIMx->PSC = psc;
+    pTIMx->ARR = div - 1U;
+    pTIMx->CNT = 0U;
+    pTIMx->CR1 |= CR1_ARPE;
+    pTIMx->EGR = EGR_UG;            /* load PSC and ARR now, not next rollover */
+    pTIMx->SR &= ~SR_UIF;           /* and drop the update that write just made */
+    pTIMx->CR1 |= CR1_CEN;
+
+    return timer_rate_hz(pTIMx);
+}
+
+/* what the timer is really doing, worked back out of the registers */
+uint32_t timer_rate_hz(TIM_RegDef_t *pTIMx)
+{
+    return clock_timer_pclk1() / ((pTIMx->PSC + 1U) * (pTIMx->ARR + 1U));
+}
+
+/*
+ * Puts the rollover onto the timer's TRGO output, where the ADC can be told to
+ * watch for it. Nothing else changes; the timer does not know or care that
+ * anything is listening.
+ */
+void timer_trgo_on_update(TIM_RegDef_t *pTIMx)
+{
+    pTIMx->CR2 = (pTIMx->CR2 & ~CR2_MMS_MSK) | CR2_MMS_UPDATE;
+}
+
+void timer_interrupt_enable(TIM_RegDef_t *pTIMx, uint8_t irq_number)
+{
+    pTIMx->DIER |= DIER_UIE;
+    interrupt_Config(irq_number, ENABLE);
+}
+
+void timer_clear_update(TIM_RegDef_t *pTIMx)
+{
+    pTIMx->SR &= ~SR_UIF;
 }
