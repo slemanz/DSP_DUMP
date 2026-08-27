@@ -38,6 +38,11 @@ void OnProjectLoad (void) {
   Window.Show ("Timeline");
   Window.Show ("Watched Data");
   Window.Show ("Console");
+
+  Window.Add ("Data Sampling", "g_raw");
+  Window.Add ("Data Sampling", "g_volts");
+  Window.Add ("Data Sampling", "g_rate");
+  Window.Add ("Data Sampling", "g_jitter");
 }
 
 /*********************************************************************

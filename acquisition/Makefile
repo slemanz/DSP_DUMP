@@ -1,6 +1,6 @@
 CC=arm-none-eabi-gcc
 TARGET=flash
-APP ?= main
+APP ?= adc_timer
 
 MACH=-mcpu=cortex-m4
 FLOAT=-mfloat-abi=hard -mfpu=fpv4-sp-d16
@@ -47,7 +47,7 @@ OBJS		+= $(BUILD_DIR)/config.o
 OBJS		+= $(BUILD_DIR)/syscalls.o
 OBJS		+= $(BUILD_DIR)/startup.o
 
-OBJS		+= $(BUILD_DIR)/signals.o
+OBJS		+= $(BUILD_DIR)/probe.o
 
 DRIVERS		+= $(BUILD_DIR)/driver_clock.o
 DRIVERS		+= $(BUILD_DIR)/driver_systick.o
@@ -56,6 +56,8 @@ DRIVERS		+= $(BUILD_DIR)/driver_uart.o
 DRIVERS		+= $(BUILD_DIR)/driver_interrupt.o
 DRIVERS		+= $(BUILD_DIR)/driver_fpu.o
 DRIVERS		+= $(BUILD_DIR)/driver_adc.o
+DRIVERS		+= $(BUILD_DIR)/driver_flash.o
+DRIVERS		+= $(BUILD_DIR)/timer.o
 
 
 PREREQ = $(BUILD_DIR)
@@ -80,11 +82,26 @@ $(BUILD_DIR)/$(TARGET).elf: $(OBJS) $(DRIVERS)
 	$(OBJCOPY) -O binary $(BUILD_DIR)/$(TARGET).elf $(BUILD_DIR)/$(TARGET).bin
 	arm-none-eabi-size $(BUILD_DIR)/$(TARGET).elf
 
-main:
-	$(MAKE) all APP=main
+adc_free:
+	$(MAKE) all APP=adc_free
 
-board_test:
-	$(MAKE) all APP=board_test
+adc_timing:
+	$(MAKE) all APP=adc_timing
+
+adc_timer:
+	$(MAKE) all APP=adc_timer
+
+adc_trigger:
+	$(MAKE) all APP=adc_trigger
+
+adc_resolution:
+	$(MAKE) all APP=adc_resolution
+
+adc_alias:
+	$(MAKE) all APP=adc_alias
+
+adc_stream:
+	$(MAKE) all APP=adc_stream
 
 load:
 	jlink flash.jlink
