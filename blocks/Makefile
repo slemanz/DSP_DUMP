@@ -1,6 +1,6 @@
 CC=arm-none-eabi-gcc
 TARGET=flash
-APP ?= main
+APP ?= blk_seam
 
 MACH=-mcpu=cortex-m4
 FLOAT=-mfloat-abi=hard -mfpu=fpv4-sp-d16
@@ -47,7 +47,10 @@ OBJS		+= $(BUILD_DIR)/config.o
 OBJS		+= $(BUILD_DIR)/syscalls.o
 OBJS		+= $(BUILD_DIR)/startup.o
 
-OBJS		+= $(BUILD_DIR)/signals.o
+OBJS		+= $(BUILD_DIR)/testsig.o
+OBJS		+= $(BUILD_DIR)/probe.o
+OBJS		+= $(BUILD_DIR)/fifo.o
+OBJS		+= $(BUILD_DIR)/stream.o
 
 DRIVERS		+= $(BUILD_DIR)/driver_clock.o
 DRIVERS		+= $(BUILD_DIR)/driver_systick.o
@@ -80,11 +83,26 @@ $(BUILD_DIR)/$(TARGET).elf: $(OBJS) $(DRIVERS)
 	$(OBJCOPY) -O binary $(BUILD_DIR)/$(TARGET).elf $(BUILD_DIR)/$(TARGET).bin
 	arm-none-eabi-size $(BUILD_DIR)/$(TARGET).elf
 
-main:
-	$(MAKE) all APP=main
+blk_fifo:
+	$(MAKE) all APP=blk_fifo
 
-board_test:
-	$(MAKE) all APP=board_test
+blk_dip:
+	$(MAKE) all APP=blk_dip
+
+blk_stream:
+	$(MAKE) all APP=blk_stream
+
+blk_block:
+	$(MAKE) all APP=blk_block
+
+blk_seam:
+	$(MAKE) all APP=blk_seam
+
+blk_latency:
+	$(MAKE) all APP=blk_latency
+
+blk_budget:
+	$(MAKE) all APP=blk_budget
 
 load:
 	jlink flash.jlink
