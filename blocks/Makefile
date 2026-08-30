@@ -47,7 +47,6 @@ OBJS		+= $(BUILD_DIR)/config.o
 OBJS		+= $(BUILD_DIR)/syscalls.o
 OBJS		+= $(BUILD_DIR)/startup.o
 
-OBJS		+= $(BUILD_DIR)/testsig.o
 OBJS		+= $(BUILD_DIR)/probe.o
 OBJS		+= $(BUILD_DIR)/fifo.o
 OBJS		+= $(BUILD_DIR)/stream.o
