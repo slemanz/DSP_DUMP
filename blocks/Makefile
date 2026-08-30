@@ -50,6 +50,8 @@ OBJS		+= $(BUILD_DIR)/startup.o
 OBJS		+= $(BUILD_DIR)/probe.o
 OBJS		+= $(BUILD_DIR)/fifo.o
 OBJS		+= $(BUILD_DIR)/stream.o
+OBJS		+= $(BUILD_DIR)/testsig.o
+OBJS		+= $(BUILD_DIR)/kernels.o
 
 DRIVERS		+= $(BUILD_DIR)/driver_clock.o
 DRIVERS		+= $(BUILD_DIR)/driver_systick.o
