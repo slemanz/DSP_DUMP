@@ -1,6 +1,6 @@
 CC=arm-none-eabi-gcc
 TARGET=flash
-APP ?= main
+APP ?= q_filter
 
 MACH=-mcpu=cortex-m4
 FLOAT=-mfloat-abi=hard -mfpu=fpv4-sp-d16
@@ -47,7 +47,8 @@ OBJS		+= $(BUILD_DIR)/config.o
 OBJS		+= $(BUILD_DIR)/syscalls.o
 OBJS		+= $(BUILD_DIR)/startup.o
 
-OBJS		+= $(BUILD_DIR)/signals.o
+OBJS		+= $(BUILD_DIR)/testsig.o
+OBJS		+= $(BUILD_DIR)/probe.o
 
 DRIVERS		+= $(BUILD_DIR)/driver_clock.o
 DRIVERS		+= $(BUILD_DIR)/driver_systick.o
@@ -80,11 +81,23 @@ $(BUILD_DIR)/$(TARGET).elf: $(OBJS) $(DRIVERS)
 	$(OBJCOPY) -O binary $(BUILD_DIR)/$(TARGET).elf $(BUILD_DIR)/$(TARGET).bin
 	arm-none-eabi-size $(BUILD_DIR)/$(TARGET).elf
 
-main:
-	$(MAKE) all APP=main
+q_format:
+	$(MAKE) all APP=q_format
 
-board_test:
-	$(MAKE) all APP=board_test
+q_convert:
+	$(MAKE) all APP=q_convert
+
+q_saturate:
+	$(MAKE) all APP=q_saturate
+
+q_multiply:
+	$(MAKE) all APP=q_multiply
+
+q_headroom:
+	$(MAKE) all APP=q_headroom
+
+q_filter:
+	$(MAKE) all APP=q_filter
 
 load:
 	jlink flash.jlink
