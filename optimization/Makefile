@@ -1,6 +1,6 @@
 CC=arm-none-eabi-gcc
 TARGET=flash
-APP ?= main
+APP ?= opt_algorithm
 
 MACH=-mcpu=cortex-m4
 FLOAT=-mfloat-abi=hard -mfpu=fpv4-sp-d16
@@ -47,7 +47,8 @@ OBJS		+= $(BUILD_DIR)/config.o
 OBJS		+= $(BUILD_DIR)/syscalls.o
 OBJS		+= $(BUILD_DIR)/startup.o
 
-OBJS		+= $(BUILD_DIR)/signals.o
+OBJS		+= $(BUILD_DIR)/testsig.o
+OBJS		+= $(BUILD_DIR)/probe.o
 
 DRIVERS		+= $(BUILD_DIR)/driver_clock.o
 DRIVERS		+= $(BUILD_DIR)/driver_systick.o
@@ -80,11 +81,27 @@ $(BUILD_DIR)/$(TARGET).elf: $(OBJS) $(DRIVERS)
 	$(OBJCOPY) -O binary $(BUILD_DIR)/$(TARGET).elf $(BUILD_DIR)/$(TARGET).bin
 	arm-none-eabi-size $(BUILD_DIR)/$(TARGET).elf
 
-main:
-	$(MAKE) all APP=main
+opt_levels:
+	$(MAKE) all APP=opt_levels
 
-board_test:
-	$(MAKE) all APP=board_test
+opt_unroll:
+	$(MAKE) all APP=opt_unroll
+
+opt_memory:
+	$(MAKE) all APP=opt_memory
+
+opt_fma:
+	$(MAKE) all APP=opt_fma
+
+opt_simd:
+	$(MAKE) all APP=opt_simd
+
+opt_algorithm:
+	$(MAKE) all APP=opt_algorithm
+
+asm:
+	$(CC) -S $(CFLAGS:-c=) $(INCLUDES) -o $(BUILD_DIR)/$(APP).s app/Src/$(APP).c
+	@echo wrote $(BUILD_DIR)/$(APP).s
 
 load:
 	jlink flash.jlink
@@ -98,4 +115,4 @@ debug:
 clean:
 	rm -rf $(BUILD_DIR)
 
-.PHONY: all load monitor debug clean
+.PHONY: all load monitor debug clean asm

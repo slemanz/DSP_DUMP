@@ -34,7 +34,12 @@ void OnProjectLoad (void) {
   File.Open ("$(ProjectDir)/../Build/flash.elf");
 
   // window layout, so every module opens the same way
+  Edit.SysVar (VAR_HSS_SPEED, FREQ_5_KHZ);
   Window.Show ("Data Sampling");
+  Window.Add ("Data Sampling", "g_cycles");
+  Window.Add ("Data Sampling", "g_per_mac");
+  Window.Add ("Data Sampling", "g_speedup");
+  Window.Add ("Data Sampling", "g_bytes");
   Window.Show ("Timeline");
   Window.Show ("Watched Data");
   Window.Show ("Console");
