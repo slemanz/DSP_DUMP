@@ -1,6 +1,6 @@
 CC=arm-none-eabi-gcc
 TARGET=flash
-APP ?= main
+APP ?= lib_choose
 
 MACH=-mcpu=cortex-m4
 FLOAT=-mfloat-abi=hard -mfpu=fpv4-sp-d16
@@ -47,7 +47,8 @@ OBJS		+= $(BUILD_DIR)/config.o
 OBJS		+= $(BUILD_DIR)/syscalls.o
 OBJS		+= $(BUILD_DIR)/startup.o
 
-OBJS		+= $(BUILD_DIR)/signals.o
+OBJS		+= $(BUILD_DIR)/testsig.o
+OBJS		+= $(BUILD_DIR)/probe.o
 
 DRIVERS		+= $(BUILD_DIR)/driver_clock.o
 DRIVERS		+= $(BUILD_DIR)/driver_systick.o
@@ -80,11 +81,26 @@ $(BUILD_DIR)/$(TARGET).elf: $(OBJS) $(DRIVERS)
 	$(OBJCOPY) -O binary $(BUILD_DIR)/$(TARGET).elf $(BUILD_DIR)/$(TARGET).bin
 	arm-none-eabi-size $(BUILD_DIR)/$(TARGET).elf
 
-main:
-	$(MAKE) all APP=main
+lib_naming:
+	$(MAKE) all APP=lib_naming
 
-board_test:
-	$(MAKE) all APP=board_test
+lib_blocks:
+	$(MAKE) all APP=lib_blocks
+
+lib_stateful:
+	$(MAKE) all APP=lib_stateful
+
+lib_stats:
+	$(MAKE) all APP=lib_stats
+
+lib_choose:
+	$(MAKE) all APP=lib_choose
+
+lib_cost:
+	$(MAKE) all APP=lib_cost
+
+lib_traps:
+	$(MAKE) all APP=lib_traps
 
 load:
 	jlink flash.jlink
