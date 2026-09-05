@@ -51,6 +51,19 @@ void ticks_delay(uint64_t delay)
     }
 }
 
+void cycles_start(void)
+{
+    SYSTICK->CTRL = 0;
+    SYSTICK->LOAD = SYSTICK_MAX_RELOAD;
+    SYSTICK->VAL  = 0;
+    SYSTICK->CTRL = (SYSTICK_CTRL_CLKSRC | SYSTICK_CTRL_ENABLE);
+}
+
+uint32_t cycles_read(void)
+{
+    return (SYSTICK_MAX_RELOAD - SYSTICK->VAL);
+}
+
 void systick_counter(uint8_t EnorDi)
 {
     if(EnorDi == ENABLE)
